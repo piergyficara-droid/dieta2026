@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Piano Nutrizionale 2026 — Piergiorgio</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #1f1f2e;
+    --accent: #7c6af7;
+    --accent2: #4ade80;
+    --accent3: #f97316;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --dim: #3a3a50;
+    --pro: #4ade80;
+    --carb: #60a5fa;
+    --fat: #fbbf24;
+    --kcal: #7c6af7;
+    --rest-color: #f43f5e;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+
+  .hero { padding:48px 24px 32px; max-width:820px; margin:0 auto; }
+  .badge { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--accent); border:1px solid var(--accent); padding:4px 10px; border-radius:4px; margin-bottom:18px; letter-spacing:.08em; }
+  h1 { font-size:clamp(30px,6vw,48px); font-weight:900; line-height:1.05; color:#fff; margin-bottom:8px; }
+  h1 span { color:var(--accent); }
+  .subtitle { font-size:14px; color:var(--muted); max-width:500px; }
+
+  .macro-bar { max-width:820px; margin:0 auto 16px; padding:0 24px; }
+  .macro-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .macro-cell { background:var(--card); padding:18px 14px; text-align:center; }
+  .macro-val { font-family:'JetBrains Mono',monospace; font-size:24px; font-weight:600; display:block; margin-bottom:3px; }
+  .macro-val.kcal { color:var(--kcal); }
+  .macro-val.prot { color:var(--pro); }
+  .macro-val.carb { color:var(--carb); }
+  .macro-val.fat  { color:var(--fat); }
+  .macro-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; }
+
+  .rest-note { max-width:820px; margin:0 auto 32px; padding:0 24px; }
+  .rest-inner { background:rgba(244,63,94,0.06); border:1px solid rgba(244,63,94,0.2); border-radius:10px; padding:12px 16px; font-size:13px; color:var(--muted); }
+  .rest-inner strong { color:var(--rest-color); }
+
+  .days-nav { display:flex; gap:6px; max-width:820px; margin:0 auto 24px; padding:0 24px; flex-wrap:wrap; }
+  .day-btn { font-family:'Inter',sans-serif; font-size:12px; font-weight:600; padding:7px 14px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--muted); cursor:pointer; transition:all .15s; }
+  .day-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .day-btn.rest-day.active { background:var(--rest-color); border-color:var(--rest-color); }
+  .day-btn:hover:not(.active) { border-color:var(--dim); color:var(--text); }
+
+  .day-panel { display:none; max-width:820px; margin:0 auto; padding:0 24px 48px; }
+  .day-panel.active { display:block; }
+  .day-desc { font-size:13px; color:var(--muted); margin-bottom:20px; }
+
+  .meals-grid { display:grid; gap:10px; }
+  .meal-card { background:var(--card); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+  .meal-header { display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-bottom:1px solid transparent; cursor:pointer; user-select:none; gap:12px; }
+  .meal-header:hover { background:rgba(255,255,255,.02); }
+  .meal-card.open .meal-header { border-bottom-color:var(--border); }
+  .meal-time { display:flex; align-items:center; gap:10px; min-width:0; }
+  .meal-icon { font-size:18px; width:34px; height:34px; display:flex; align-items:center; justify-content:center; background:var(--surface); border-radius:8px; flex-shrink:0; }
+  .meal-name { font-weight:600; font-size:13px; color:var(--text); }
+  .meal-sub { font-size:11px; color:var(--muted); }
+  .meal-kcal { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--kcal); font-weight:600; white-space:nowrap; }
+  .chevron { font-size:11px; color:var(--muted); flex-shrink:0; transition:transform .2s; }
+  .meal-card.open .chevron { transform:rotate(180deg); }
+
+  .meal-body { display:none; padding:14px 16px; }
+  .meal-card.open .meal-body { display:block; }
+
+  .ingredient-row { display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid rgba(255,255,255,.03); font-size:12px; }
+  .ingredient-row:last-child { border-bottom:none; }
+  .ing-name { color:var(--text); }
+  .ing-amount { font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--muted); }
+  .sauce-tag { display:inline-block; font-size:10px; padding:1px 6px; border-radius:3px; background:rgba(249,115,22,.12); color:var(--accent3); border:1px solid rgba(249,115,22,.2); margin-left:5px; vertical-align:middle; }
+
+  .meal-macros { display:flex; gap:14px; margin-top:12px; padding-top:10px; border-top:1px solid var(--border); flex-wrap:wrap; }
+  .mmacro { display:flex; align-items:center; gap:4px; font-size:11px; }
+  .dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .dot.p { background:var(--pro); } .dot.c { background:var(--carb); } .dot.f { background:var(--fat); }
+  .mmacro span { color:var(--muted); } .mmacro strong { color:var(--text); }
+
+  .day-total { margin-top:16px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+  .day-total-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-right:auto; }
+  .day-total-val { font-family:'JetBrains Mono',monospace; font-size:14px; font-weight:600; }
+
+  .section-sep { max-width:820px; margin:0 auto; padding:0 24px; }
+  .section-title { font-size:11px; font-family:'JetBrains Mono',monospace; color:var(--muted); letter-spacing:.12em; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:10px; }
+
+  .rules-section { max-width:820px; margin:0 auto; padding:0 24px 64px; }
+  .rules-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .rule-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:16px; }
+  .rule-card h3 { font-size:12px; font-weight:700; margin-bottom:8px; }
+  .rule-card ul { list-style:none; font-size:12px; color:var(--muted); display:flex; flex-direction:column; gap:4px; }
+  .rule-card ul li::before { content:'– '; color:var(--dim); }
+  .rule-card ul li.ok { color:var(--pro); } .rule-card ul li.ok::before { content:'✓ '; color:var(--pro); }
+  .rule-card ul li.warn { color:var(--accent3); } .rule-card ul li.warn::before { content:'⚠ '; color:var(--accent3); }
+
+  .rest-day-panel { background:rgba(244,63,94,0.04); border:1px solid rgba(244,63,94,0.15); border-radius:12px; padding:24px; }
+  .rest-day-panel h3 { color:var(--rest-color); font-size:16px; margin-bottom:8px; }
+  .rest-day-panel p { color:var(--muted); font-size:13px; margin-bottom:16px; }
+  .rest-macros { display:flex; gap:16px; flex-wrap:wrap; }
+  .rest-macro { text-align:center; }
+  .rest-macro .rv { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700; display:block; }
+  .rest-macro .rl { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; }
+
+  @media(max-width:540px){
+    .rules-grid{grid-template-columns:1fr;}
+    .macro-grid{grid-template-columns:repeat(2,1fr);}
+    .rest-macros{gap:12px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">PIANO SETTIMANALE · BIA BASELINE 10 GIU 2026</div>
+  <h1>Piano<br><span>Nutrizionale</span></h1>
+  <p class="subtitle">Da prendere come riferimento per kcal e macro — adattalo a quello che hai e che ti va. Giovedì = riposo, kcal più basse.</p>
+</div>
+
+<div class="macro-bar">
+  <div class="macro-grid">
+    <div class="macro-cell"><span class="macro-val kcal">2.400</span><span class="macro-label">kcal allenamento</span></div>
+    <div class="macro-cell"><span class="macro-val prot">145 g</span><span class="macro-label">Proteine</span></div>
+    <div class="macro-cell"><span class="macro-val carb">290 g</span><span class="macro-label">Carboidrati</span></div>
+    <div class="macro-cell"><span class="macro-val fat">70 g</span><span class="macro-label">Grassi</span></div>
+  </div>
+</div>
+
+<div class="rest-note">
+  <div class="rest-inner"><strong>Giovedì riposo:</strong> kcal scendono a ~2.000–2.100 — meno carboidrati, proteine uguali, grassi uguali.</div>
+</div>
+
+<div class="days-nav">
+  <button class="day-btn active" onclick="showDay('lun',this)">Lun</button>
+  <button class="day-btn" onclick="showDay('mar',this)">Mar</button>
+  <button class="day-btn" onclick="showDay('mer',this)">Mer</button>
+  <button class="day-btn rest-day" onclick="showDay('gio',this)">Gio 😴</button>
+  <button class="day-btn" onclick="showDay('ven',this)">Ven</button>
+  <button class="day-btn" onclick="showDay('sab',this)">Sab</button>
+  <button class="day-btn" onclick="showDay('dom',this)">Dom</button>
+</div>
+
+<!-- LUNEDÌ -->
+<div class="day-panel active" id="day-lun">
+  <p class="day-desc">Lunedì — giorno di allenamento. Colazione solida, pranzo con pasta, cena proteica.</p>
+  <div class="meals-grid">
+    <div class="meal-card open">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🥣</div><div><div class="meal-name">Colazione</div><div class="meal-sub">07:30</div></div></div>
+        <span class="meal-kcal">~550 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Fiocchi d'avena</span><span class="ing-amount">60 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Latte intero</span><span class="ing-amount">250 ml</span></div>
+        <div class="ingredient-row"><span class="ing-name">Banana</span><span class="ing-amount">1 media</span></div>
+        <div class="ingredient-row"><span class="ing-name">Burro d'arachidi</span><span class="ing-amount">20 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Caffè</span><span class="ing-amount">q.b.</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>20g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>80g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>16g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🍝</div><div><div class="meal-name">Pranzo</div><div class="meal-sub">13:00</div></div></div>
+        <span class="meal-kcal">~700 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Pasta integrale (secca)</span><span class="ing-amount">100 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Tonno al naturale</span><span class="ing-amount">160 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Passata di pomodoro</span><span class="ing-amount">80 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Olio EVO</span><span class="ing-amount">10 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Parmigiano</span><span class="ing-amount">15 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Verdure miste</span><span class="ing-amount">q.b.</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>52g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>82g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>14g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">⚡</div><div><div class="meal-name">Pre/Post workout</div><div class="meal-sub">16:30</div></div></div>
+        <span class="meal-kcal">~320 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Whey protein</span><span class="ing-amount">30 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Banana</span><span class="ing-amount">1 media</span></div>
+        <div class="ingredient-row"><span class="ing-name">Gallette di riso</span><span class="ing-amount">3 pz</span></div>
+        <div class="ingredient-row"><span class="ing-name">Creatina</span><span class="ing-amount">5 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>26g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>52g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>2g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🍗</div><div><div class="meal-name">Cena</div><div class="meal-sub">20:30</div></div></div>
+        <span class="meal-kcal">~830 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Petto di pollo</span><span class="ing-amount">200 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Patate al forno</span><span class="ing-amount">300 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Pane</span><span class="ing-amount">60 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Olio EVO</span><span class="ing-amount">12 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">BBQ sauce <span class="sauce-tag">salsa</span></span><span class="ing-amount">20 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Maionese light <span class="sauce-tag">salsa</span></span><span class="ing-amount">15 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>48g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>78g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>22g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="day-total">
+    <span class="day-total-label">Totale lunedì</span>
+    <span class="day-total-val" style="color:var(--kcal)">2.400 kcal</span>
+    <span class="day-total-val" style="color:var(--pro)">146g P</span>
+    <span class="day-total-val" style="color:var(--carb)">292g C</span>
+    <span class="day-total-val" style="color:var(--fat)">54g F</span>
+  </div>
+</div>
+
+<!-- MARTEDÌ -->
+<div class="day-panel" id="day-mar">
+  <p class="day-desc">Martedì — allenamento. Colazione veloce, riso a pranzo, burger a cena.</p>
+  <div class="meals-grid">
+    <div class="meal-card open">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🥐</div><div><div class="meal-name">Colazione</div><div class="meal-sub">07:30</div></div></div>
+        <span class="meal-kcal">~500 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Pane / rosetta</span><span class="ing-amount">90 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Fesa di tacchino</span><span class="ing-amount">80 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Provola / formaggio</span><span class="ing-amount">40 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Mela o arancia</span><span class="ing-amount">1 pz</span></div>
+        <div class="ingredient-row"><span class="ing-name">Caffè</span><span class="ing-amount">q.b.</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>34g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>56g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>14g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🍚</div><div><div class="meal-name">Pranzo</div><div class="meal-sub">13:00</div></div></div>
+        <span class="meal-kcal">~700 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Riso basmati (secco)</span><span class="ing-amount">100 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Petto di pollo</span><span class="ing-amount">180 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Zucchine / peperoni</span><span class="ing-amount">150 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Olio EVO</span><span class="ing-amount">12 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Salsa di soia <span class="sauce-tag">salsa</span></span><span class="ing-amount">10 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>50g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>84g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>16g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">⚡</div><div><div class="meal-name">Pre/Post workout</div><div class="meal-sub">16:30</div></div></div>
+        <span class="meal-kcal">~300 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Whey protein</span><span class="ing-amount">30 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Banana</span><span class="ing-amount">1 media</span></div>
+        <div class="ingredient-row"><span class="ing-name">Mandorle</span><span class="ing-amount">15 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Creatina</span><span class="ing-amount">5 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>26g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>38g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>10g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🍔</div><div><div class="meal-name">Cena</div><div class="meal-sub">20:30</div></div></div>
+        <span class="meal-kcal">~900 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Hamburger manzo magro</span><span class="ing-amount">200 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Pane burger</span><span class="ing-amount">100 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Patate air fryer</span><span class="ing-amount">250 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Mozzarella</span><span class="ing-amount">50 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Ketchup <span class="sauce-tag">salsa</span></span><span class="ing-amount">20 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Maionese light <span class="sauce-tag">salsa</span></span><span class="ing-amount">15 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>55g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>90g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>32g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="day-total">
+    <span class="day-total-label">Totale martedì</span>
+    <span class="day-total-val" style="color:var(--kcal)">2.400 kcal</span>
+    <span class="day-total-val" style="color:var(--pro)">165g P</span>
+    <span class="day-total-val" style="color:var(--carb)">268g C</span>
+    <span class="day-total-val" style="color:var(--fat)">72g F</span>
+  </div>
+</div>
+
+<!-- MERCOLEDÌ -->
+<div class="day-panel" id="day-mer">
+  <p class="day-desc">Mercoledì — allenamento. Uova a colazione, pesto a pranzo, panino serio a cena.</p>
+  <div class="meals-grid">
+    <div class="meal-card open">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🍳</div><div><div class="meal-name">Colazione</div><div class="meal-sub">07:30</div></div></div>
+        <span class="meal-kcal">~500 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Uova intere</span><span class="ing-amount">3 pz</span></div>
+        <div class="ingredient-row"><span class="ing-name">Pane tostato</span><span class="ing-amount">70 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Banana</span><span class="ing-amount">1 media</span></div>
+        <div class="ingredient-row"><span class="ing-name">Caffè</span><span class="ing-amount">q.b.</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>24g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>65g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>16g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🍝</div><div><div class="meal-name">Pranzo</div><div class="meal-sub">13:00</div></div></div>
+        <span class="meal-kcal">~750 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Pasta (secca)</span><span class="ing-amount">100 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Tonno al naturale</span><span class="ing-amount">150 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Pesto genovese <span class="sauce-tag">salsa</span></span><span class="ing-amount">40 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Parmigiano</span><span class="ing-amount">15 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Frutto</span><span class="ing-amount">1 pz</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>50g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>88g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>22g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">⚡</div><div><div class="meal-name">Pre/Post workout</div><div class="meal-sub">16:30</div></div></div>
+        <span class="meal-kcal">~320 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Whey protein</span><span class="ing-amount">30 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Gallette di riso</span><span class="ing-amount">4 pz</span></div>
+        <div class="ingredient-row"><span class="ing-name">Crema arachidi</span><span class="ing-amount">15 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Creatina</span><span class="ing-amount">5 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>26g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>42g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>10g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🥪</div><div><div class="meal-name">Cena</div><div class="meal-sub">20:30</div></div></div>
+        <span class="meal-kcal">~830 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Pollo panato al forno</span><span class="ing-amount">220 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Pane</span><span class="ing-amount">80 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Patate al forno</span><span class="ing-amount">200 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Olio EVO</span><span class="ing-amount">10 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">BBQ sauce <span class="sauce-tag">salsa</span></span><span class="ing-amount">20 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>48g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>85g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>22g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="day-total">
+    <span class="day-total-label">Totale mercoledì</span>
+    <span class="day-total-val" style="color:var(--kcal)">2.400 kcal</span>
+    <span class="day-total-val" style="color:var(--pro)">148g P</span>
+    <span class="day-total-val" style="color:var(--carb)">280g C</span>
+    <span class="day-total-val" style="color:var(--fat)">70g F</span>
+  </div>
+</div>
+
+<!-- GIOVEDÌ RIPOSO -->
+<div class="day-panel" id="day-gio">
+  <div class="rest-day-panel">
+    <h3>😴 Giovedì — Riposo</h3>
+    <p>Niente allenamento, kcal scendono a ~2.000–2.100. Taglia i carboidrati, mantieni proteine e grassi. Niente whey obbligatoria se non ti va.</p>
+    <div class="rest-macros">
+      <div class="rest-macro"><span class="rv" style="color:var(--kcal)">2.050</span><span class="rl">kcal</span></div>
+      <div class="rest-macro"><span class="rv" style="color:var(--pro)">140g</span><span class="rl">Proteine</span></div>
+      <div class="rest-macro"><span class="rv" style="color:var(--carb)">210g</span><span class="rl">Carboidrati</span></div>
+      <div class="rest-macro"><span class="rv" style="color:var(--fat)">68g</span><span class="rl">Grassi</span></div>
+    </div>
+  </div>
+  <div class="meals-grid" style="margin-top:16px;">
+    <div class="meal-card open">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🍳</div><div><div class="meal-name">Colazione</div><div class="meal-sub">08:00 — più tardi, niente fretta</div></div></div>
+        <span class="meal-kcal">~450 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Uova intere</span><span class="ing-amount">2 pz</span></div>
+        <div class="ingredient-row"><span class="ing-name">Pane</span><span class="ing-amount">60 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Fesa di tacchino</span><span class="ing-amount">60 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Frutto</span><span class="ing-amount">1 pz</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>32g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>52g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>14g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🥗</div><div><div class="meal-name">Pranzo</div><div class="meal-sub">13:00</div></div></div>
+        <span class="meal-kcal">~650 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Riso o pasta (secca)</span><span class="ing-amount">80 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Tonno o pollo</span><span class="ing-amount">150 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Verdure abbondanti</span><span class="ing-amount">200 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Olio EVO</span><span class="ing-amount">12 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>45g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>68g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>16g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🍗</div><div><div class="meal-name">Cena</div><div class="meal-sub">20:00</div></div></div>
+        <span class="meal-kcal">~700 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Petto di pollo / tacchino</span><span class="ing-amount">220 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Patate al forno</span><span class="ing-amount">200 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Olio EVO</span><span class="ing-amount">12 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Verdure</span><span class="ing-amount">q.b.</span></div>
+        <div class="ingredient-row"><span class="ing-name">Senape / salsa piccante <span class="sauce-tag">salsa</span></span><span class="ing-amount">q.b.</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>52g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>52g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>22g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="day-total" style="border-color:rgba(244,63,94,0.2);">
+    <span class="day-total-label">Totale giovedì (riposo)</span>
+    <span class="day-total-val" style="color:var(--rest-color)">2.050 kcal</span>
+    <span class="day-total-val" style="color:var(--pro)">139g P</span>
+    <span class="day-total-val" style="color:var(--carb)">210g C</span>
+    <span class="day-total-val" style="color:var(--fat)">62g F</span>
+  </div>
+</div>
+
+<!-- VENERDÌ -->
+<div class="day-panel" id="day-ven">
+  <p class="day-desc">Venerdì — allenamento. Pancake proteico a colazione, pasta a pranzo, carne a cena.</p>
+  <div class="meals-grid">
+    <div class="meal-card open">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🥞</div><div><div class="meal-name">Colazione</div><div class="meal-sub">07:30</div></div></div>
+        <span class="meal-kcal">~520 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Pancake proteico (uovo + whey + latte + lievito)</span><span class="ing-amount">1 porzione</span></div>
+        <div class="ingredient-row"><span class="ing-name">— Uovo intero</span><span class="ing-amount">1 pz</span></div>
+        <div class="ingredient-row"><span class="ing-name">— Whey protein</span><span class="ing-amount">30 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">— Latte</span><span class="ing-amount">100 ml</span></div>
+        <div class="ingredient-row"><span class="ing-name">Banana</span><span class="ing-amount">1 media</span></div>
+        <div class="ingredient-row"><span class="ing-name">Crema arachidi</span><span class="ing-amount">15 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>36g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>58g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>14g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🍝</div><div><div class="meal-name">Pranzo</div><div class="meal-sub">13:00</div></div></div>
+        <span class="meal-kcal">~680 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Pasta (secca)</span><span class="ing-amount">100 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Pesto genovese <span class="sauce-tag">salsa</span></span><span class="ing-amount">35 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Parmigiano</span><span class="ing-amount">15 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Tonno al naturale</span><span class="ing-amount">120 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Frutto</span><span class="ing-amount">1 pz</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>46g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>84g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>18g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">⚡</div><div><div class="meal-name">Pre/Post workout</div><div class="meal-sub">16:30</div></div></div>
+        <span class="meal-kcal">~300 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Whey protein</span><span class="ing-amount">30 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Banana</span><span class="ing-amount">1 media</span></div>
+        <div class="ingredient-row"><span class="ing-name">Gallette di riso</span><span class="ing-amount">3 pz</span></div>
+        <div class="ingredient-row"><span class="ing-name">Creatina</span><span class="ing-amount">5 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>26g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>48g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>2g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🥩</div><div><div class="meal-name">Cena</div><div class="meal-sub">20:30</div></div></div>
+        <span class="meal-kcal">~900 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Fettine di manzo / bistecca</span><span class="ing-amount">200 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Pane</span><span class="ing-amount">80 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Patate al forno</span><span class="ing-amount">280 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Olio EVO</span><span class="ing-amount">12 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">BBQ sauce <span class="sauce-tag">salsa</span></span><span class="ing-amount">20 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>46g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>88g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>28g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="day-total">
+    <span class="day-total-label">Totale venerdì</span>
+    <span class="day-total-val" style="color:var(--kcal)">2.400 kcal</span>
+    <span class="day-total-val" style="color:var(--pro)">154g P</span>
+    <span class="day-total-val" style="color:var(--carb)">278g C</span>
+    <span class="day-total-val" style="color:var(--fat)">62g F</span>
+  </div>
+</div>
+
+<!-- SABATO -->
+<div class="day-panel" id="day-sab">
+  <p class="day-desc">Sabato — allenamento. Puoi permetterti qualcosa di più sfizioso a cena, rimani nei macro.</p>
+  <div class="meals-grid">
+    <div class="meal-card open">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🥣</div><div><div class="meal-name">Colazione</div><div class="meal-sub">08:00</div></div></div>
+        <span class="meal-kcal">~550 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Fiocchi d'avena</span><span class="ing-amount">60 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Latte intero</span><span class="ing-amount">250 ml</span></div>
+        <div class="ingredient-row"><span class="ing-name">Banana</span><span class="ing-amount">1 media</span></div>
+        <div class="ingredient-row"><span class="ing-name">Miele</span><span class="ing-amount">10 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Caffè</span><span class="ing-amount">q.b.</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>18g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>88g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>10g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🍚</div><div><div class="meal-name">Pranzo</div><div class="meal-sub">13:00</div></div></div>
+        <span class="meal-kcal">~700 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Riso basmati (secco)</span><span class="ing-amount">100 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Fesa di tacchino</span><span class="ing-amount">200 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Verdure miste</span><span class="ing-amount">150 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Olio EVO</span><span class="ing-amount">12 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Parmigiano</span><span class="ing-amount">15 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>52g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>85g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>16g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">⚡</div><div><div class="meal-name">Pre/Post workout</div><div class="meal-sub">16:30</div></div></div>
+        <span class="meal-kcal">~300 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Whey protein</span><span class="ing-amount">30 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Banana</span><span class="ing-amount">1 media</span></div>
+        <div class="ingredient-row"><span class="ing-name">Creatina</span><span class="ing-amount">5 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>26g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>32g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>2g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🍕</div><div><div class="meal-name">Cena — più libera</div><div class="meal-sub">20:30</div></div></div>
+        <span class="meal-kcal">~850 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Pizza / pinsa proteica fatta in casa</span><span class="ing-amount">~300 g tot</span></div>
+        <div class="ingredient-row"><span class="ing-name">— base + pomodoro + mozzarella</span><span class="ing-amount"></span></div>
+        <div class="ingredient-row"><span class="ing-name">— topping: pollo / tonno / prosciutto</span><span class="ing-amount">100 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Verdure a lato</span><span class="ing-amount">q.b.</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>45g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>90g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>28g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="day-total">
+    <span class="day-total-label">Totale sabato</span>
+    <span class="day-total-val" style="color:var(--kcal)">2.400 kcal</span>
+    <span class="day-total-val" style="color:var(--pro)">141g P</span>
+    <span class="day-total-val" style="color:var(--carb)">295g C</span>
+    <span class="day-total-val" style="color:var(--fat)">56g F</span>
+  </div>
+</div>
+
+<!-- DOMENICA -->
+<div class="day-panel" id="day-dom">
+  <p class="day-desc">Domenica — allenamento. Colazione più rilassata, pranzo in famiglia se capita, tieni le proteine alte.</p>
+  <div class="meals-grid">
+    <div class="meal-card open">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🍳</div><div><div class="meal-name">Colazione</div><div class="meal-sub">08:30 — più calma</div></div></div>
+        <span class="meal-kcal">~550 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Uova intere</span><span class="ing-amount">3 pz</span></div>
+        <div class="ingredient-row"><span class="ing-name">Pane tostato</span><span class="ing-amount">80 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Fesa di tacchino</span><span class="ing-amount">60 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Frutto</span><span class="ing-amount">1 pz</span></div>
+        <div class="ingredient-row"><span class="ing-name">Caffè</span><span class="ing-amount">q.b.</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>36g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>72g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>18g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🍝</div><div><div class="meal-name">Pranzo</div><div class="meal-sub">13:30</div></div></div>
+        <span class="meal-kcal">~750 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Pasta (secca)</span><span class="ing-amount">100 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Ragù / sugo con carne</span><span class="ing-amount">150 g carne</span></div>
+        <div class="ingredient-row"><span class="ing-name">Parmigiano</span><span class="ing-amount">15 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Olio EVO</span><span class="ing-amount">8 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>48g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>86g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>20g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">⚡</div><div><div class="meal-name">Pre/Post workout</div><div class="meal-sub">16:30</div></div></div>
+        <span class="meal-kcal">~300 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Whey protein</span><span class="ing-amount">30 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Gallette di riso</span><span class="ing-amount">3 pz</span></div>
+        <div class="ingredient-row"><span class="ing-name">Banana</span><span class="ing-amount">1 media</span></div>
+        <div class="ingredient-row"><span class="ing-name">Creatina</span><span class="ing-amount">5 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>26g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>48g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>2g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this)">
+        <div class="meal-time"><div class="meal-icon">🍗</div><div><div class="meal-name">Cena</div><div class="meal-sub">20:30</div></div></div>
+        <span class="meal-kcal">~800 kcal</span><span class="chevron">▾</span>
+      </div>
+      <div class="meal-body">
+        <div class="ingredient-row"><span class="ing-name">Pollo al forno / tacchino</span><span class="ing-amount">220 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Patate al forno</span><span class="ing-amount">250 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Pane</span><span class="ing-amount">50 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">Olio EVO</span><span class="ing-amount">12 g</span></div>
+        <div class="ingredient-row"><span class="ing-name">BBQ / ketchup <span class="sauce-tag">salsa</span></span><span class="ing-amount">20 g</span></div>
+        <div class="meal-macros">
+          <div class="mmacro"><span class="dot p"></span><strong>50g</strong><span>&nbsp;P</span></div>
+          <div class="mmacro"><span class="dot c"></span><strong>72g</strong><span>&nbsp;C</span></div>
+          <div class="mmacro"><span class="dot f"></span><strong>22g</strong><span>&nbsp;F</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="day-total">
+    <span class="day-total-label">Totale domenica</span>
+    <span class="day-total-val" style="color:var(--kcal)">2.400 kcal</span>
+    <span class="day-total-val" style="color:var(--pro)">160g P</span>
+    <span class="day-total-val" style="color:var(--carb)">278g C</span>
+    <span class="day-total-val" style="color:var(--fat)">62g F</span>
+  </div>
+</div>
+
+<!-- REGOLE -->
+<div class="section-sep" style="margin-top:16px;">
+  <div class="section-title">RIFERIMENTI RAPIDI</div>
+</div>
+<div class="rules-section">
+  <div class="rules-grid">
+    <div class="rule-card">
+      <h3>✅ Salse OK — pesale</h3>
+      <ul>
+        <li class="ok">BBQ — ~40 kcal / 20g</li>
+        <li class="ok">Ketchup — ~20 kcal / 20g</li>
+        <li class="ok">Maionese light — ~40 kcal / 15g</li>
+        <li class="ok">Senape — quasi 0 kcal</li>
+        <li class="ok">Salsa piccante</li>
+        <li class="ok">Pesto — conta, 40g = ~200 kcal</li>
+        <li class="ok">Salsa di soia — 10g = ~6 kcal</li>
+      </ul>
+    </div>
+    <div class="rule-card">
+      <h3>📊 Metriche che contano</h3>
+      <ul>
+        <li>Peso medio settimanale — non il singolo giorno</li>
+        <li>Addome: 79 cm → obiettivo far scendere</li>
+        <li>Forza in palestra — pesi sul bilanciere</li>
+        <li>Foto ogni 3–4 settimane</li>
+        <li class="ok">2.400–2.500 nei giorni di allenamento</li>
+        <li class="ok">2.000–2.100 il giovedì di riposo</li>
+      </ul>
+    </div>
+    <div class="rule-card">
+      <h3>💊 Integratori — già ok</h3>
+      <ul>
+        <li class="ok">Creatina 5g — ogni giorno ore 15:00</li>
+        <li class="ok">Whey — pre o post workout</li>
+        <li class="ok">Omega 3 — con i pasti</li>
+        <li class="ok">Magnesio bisglicinato — sera</li>
+        <li class="warn">Vitamina D — valuta se stai poco al sole</li>
+        <li>Nient'altro di necessario</li>
+      </ul>
+    </div>
+    <div class="rule-card">
+      <h3>⚡ Regola pratica</h3>
+      <ul>
+        <li class="ok">Proteine sempre ≥ 140g — anche nei giorni liberi</li>
+        <li class="ok">Carboidrati alti nei giorni di allenamento</li>
+        <li>Giovedì: meno carb, non meno proteine</li>
+        <li>Frutta: ok — banana, mela, arancia</li>
+        <li class="warn">Evita: Coca, succhi, merendine</li>
+        <li>Dormi — il muscolo cresce lì</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+  function showDay(day, btn) {
+    document.querySelectorAll('.day-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('day-' + day).classList.add('active');
+    btn.classList.add('active');
+  }
+  function toggleMeal(header) {
+    header.parentElement.classList.toggle('open');
+  }
+</script>
+</body>
+</html>
