@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piano Nutrizionale | Piergiorgio Ficara</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        surface: '#FAFAFA',
+                        panel: '#FFFFFF',
+                        border: '#E5E5E5',
+                        ink: '#111111',
+                        muted: '#555555',
+                        subtle: '#888888',
+                        accent: '#2563EB',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #FAFAFA;
+            color: #111111;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .mono-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-variant-numeric: tabular-nums;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Custom subtle scrollbars for chat */
+        .thin-scroll::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        .thin-scroll::-webkit-scrollbar-track {
+            background: #FAFAFA;
+        }
+        .thin-scroll::-webkit-scrollbar-thumb {
+            background: #D4D4D4;
+            border-radius: 2px;
+        }
+        input[type="checkbox"] {
+            accent-color: #111111;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-ink selection:text-white pb-20">
+
+    <!-- TOP STATUS BAR (Macro Targets, Mini-Cut Toggle, Water Tracker) -->
+    <div class="bg-ink text-white text-xs border-b border-neutral-800">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+            <!-- Left: Patient & Doctor -->
+            <div class="flex items-center space-x-3">
+                <span class="font-semibold tracking-tight text-white">PIERGIORGIO FICARA</span>
+                <span class="text-neutral-500">/</span>
+                <span class="text-neutral-400 hidden sm:inline">Dott.ssa A. Tartamella</span>
+                <span class="bg-neutral-800 text-neutral-300 px-2 py-0.5 rounded text-[11px] mono-num border border-neutral-700">NO YOGURT · NO MOLLUSCHI</span>
+            </div>
+
+            <!-- Center/Right: Live Macro Bar -->
+            <div class="flex flex-wrap items-center gap-4 sm:gap-6 mono-num">
+                <div>
+                    <span class="text-neutral-400">TARGET:</span> 
+                    <strong id="top-kcal" class="text-white">3000 KCAL</strong>
+                </div>
+                <div>
+                    <span class="text-neutral-400">C:</span> 
+                    <strong id="top-carbs" class="text-white">370g</strong>
+                </div>
+                <div>
+                    <span class="text-neutral-400">P:</span> 
+                    <strong class="text-white">150g</strong>
+                </div>
+                <div>
+                    <span class="text-neutral-400">F:</span> 
+                    <strong class="text-white">100g</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STICKY HEADER & CONTROLS -->
+    <header class="bg-panel border-b border-border sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6">
+            <!-- Control Strip -->
+            <div class="py-3 flex flex-wrap items-center justify-between gap-4 border-b border-border">
+                
+                <!-- Water Tracker (3.0L Target) -->
+                <div class="flex items-center space-x-3">
+                    <span class="text-xs font-medium text-muted uppercase tracking-wider">Acqua (&gt;200mg/dl):</span>
+                    <div class="flex items-center space-x-1">
+                        <button onclick="updateWater(-0.5)" class="w-6 h-6 rounded border border-border bg-surface hover:bg-neutral-200 flex items-center justify-center text-xs mono-num font-bold" title="-0.5L">-</button>
+                        <span id="water-display" class="px-2.5 py-0.5 bg-surface border border-border rounded text-xs mono-num font-semibold">0.0 / 3.0 L</span>
+                        <button onclick="updateWater(0.5)" class="w-6 h-6 rounded border border-border bg-surface hover:bg-neutral-200 flex items-center justify-center text-xs mono-num font-bold" title="+0.5L">+</button>
+                    </div>
+                    <span class="text-[11px] text-subtle hidden md:inline">(1-2 bicchieri appena sveglio)</span>
+                </div>
+
+                <!-- Toggles: Mini-Cut & Out-of-Town -->
+                <div class="flex items-center space-x-3">
+                    <!-- Out of Town Toggle -->
+                    <label class="inline-flex items-center cursor-pointer select-none border border-border rounded px-2.5 py-1 bg-surface hover:bg-neutral-100 transition">
+                        <input type="checkbox" id="toggle-fuoriporta" onchange="toggleFuoriPorta()" class="sr-only peer">
+                        <div class="w-2 h-2 rounded-full bg-neutral-300 peer-checked:bg-accent mr-2"></div>
+                        <span class="text-xs font-medium text-ink">Modalità Fuori Porta (Panino Frittata)</span>
+                    </label>
+
+                    <!-- Mini-Cut Toggle -->
+                    <label class="inline-flex items-center cursor-pointer select-none border border-border rounded px-2.5 py-1 bg-surface hover:bg-neutral-100 transition" title="Ogni 4 settimane: dimezza carboidrati di pranzo e cena per 1 settimana">
+                        <input type="checkbox" id="toggle-minicut" onchange="toggleMiniCut()" class="sr-only peer">
+                        <div class="w-2 h-2 rounded-full bg-neutral-300 peer-checked:bg-amber-600 mr-2"></div>
+                        <span class="text-xs font-medium text-ink">Mini-Cut (-50% Carbo P/C)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Main Navigation Tabs -->
+            <nav class="flex space-x-6 overflow-x-auto no-scrollbar" aria-label="Sezioni">
+                <button onclick="switchMainTab('tab-settimana')" id="btn-tab-settimana" class="main-tab-btn py-3 border-b-2 border-ink text-ink font-medium text-xs uppercase tracking-wider whitespace-nowrap">
+                    1. Piano 7 Giorni (Lun-Dom)
+                </button>
+                <button onclick="switchMainTab('tab-costruttore')" id="btn-tab-costruttore" class="main-tab-btn py-3 border-b-2 border-transparent text-muted hover:text-ink font-medium text-xs uppercase tracking-wider whitespace-nowrap">
+                    2. Costruttore &amp; Frequenze
+                </button>
+                <button onclick="switchMainTab('tab-regole')" id="btn-tab-regole" class="main-tab-btn py-3 border-b-2 border-transparent text-muted hover:text-ink font-medium text-xs uppercase tracking-wider whitespace-nowrap">
+                    3. Ricette &amp; Regole Cottura
+                </button>
+                <button onclick="switchMainTab('tab-spesa')" id="btn-tab-spesa" class="main-tab-btn py-3 border-b-2 border-transparent text-muted hover:text-ink font-medium text-xs uppercase tracking-wider whitespace-nowrap">
+                    4. Lista della Spesa
+                </button>
+                <button onclick="scrollToChat()" class="py-3 border-b-2 border-transparent text-accent hover:text-blue-800 font-medium text-xs uppercase tracking-wider whitespace-nowrap flex items-center">
+                    <span>5. Assistente Gemini AI</span>
+                    <span class="ml-1.5 w-1.5 h-1.5 rounded-full bg-accent"></span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 py-6 flex-grow w-full space-y-10">
+
+        <!-- ==========================================
+             SEZIONE 1: PIANO 7 GIORNI (LUN - DOM)
+             ========================================== -->
+        <section id="tab-settimana" class="main-section space-y-6">
+            
+            <!-- Day Selector Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-2 bg-panel p-2 border border-border rounded">
+                <div class="flex flex-wrap gap-1" id="day-buttons-container">
+                    <button onclick="selectDay(0)" class="day-btn px-3 py-1.5 rounded text-xs font-medium transition">Lunedì</button>
+                    <button onclick="selectDay(1)" class="day-btn px-3 py-1.5 rounded text-xs font-medium transition">Martedì</button>
+                    <button onclick="selectDay(2)" class="day-btn px-3 py-1.5 rounded text-xs font-medium transition">Mercoledì</button>
+                    <button onclick="selectDay(3)" class="day-btn px-3 py-1.5 rounded text-xs font-medium transition">Giovedì</button>
+                    <button onclick="selectDay(4)" class="day-btn px-3 py-1.5 rounded text-xs font-medium transition">Venerdì</button>
+                    <button onclick="selectDay(5)" class="day-btn px-3 py-1.5 rounded text-xs font-medium transition">Sabato</button>
+                    <button onclick="selectDay(6)" class="day-btn px-3 py-1.5 rounded text-xs font-medium transition">Domenica</button>
+                </div>
+                <button onclick="selectDay('all')" id="btn-all-days" class="px-3 py-1.5 rounded text-xs font-medium border border-border bg-surface hover:bg-neutral-200 transition mono-num">
+                    Vista 7 Giorni Completa
+                </button>
+            </div>
+
+            <!-- Active Banners (Mini-cut or Fuori Porta) -->
+            <div id="banner-alerts" class="hidden space-y-2"></div>
+
+            <!-- Dynamic Day Content Container -->
+            <div id="day-view-container" class="space-y-6"></div>
+
+            <!-- Fixed Daily Integration Bar -->
+            <div class="bg-panel border border-border rounded p-4">
+                <div class="text-xs font-semibold uppercase tracking-wider text-muted mb-3 flex items-center justify-between">
+                    <span>Protocollo Integrazione &amp; Routine Quotidiana</span>
+                    <span class="mono-num text-[11px] text-subtle">3-4h tra ogni pasto</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                    <div class="p-3 bg-surface border border-border rounded">
+                        <div class="font-semibold text-ink mb-0.5">1. Appena Sveglio</div>
+                        <div class="text-muted"><span class="mono-num font-medium text-ink">1-2 bicchieri d'acqua</span> prima di colazione (attiva noradrenalina, riduce ritenzione).</div>
+                    </div>
+                    <div class="p-3 bg-surface border border-border rounded">
+                        <div class="font-semibold text-ink mb-0.5">2. Pre / Post Workout</div>
+                        <div class="text-muted"><span class="mono-num font-medium text-ink">5g Creatina Creapure</span> con abbondante acqua vicino a un pasto con carboidrati.</div>
+                    </div>
+                    <div class="p-3 bg-surface border border-border rounded">
+                        <div class="font-semibold text-ink mb-0.5">3. Pasto Principale</div>
+                        <div class="text-muted"><span class="mono-num font-medium text-ink">Omega 3</span> durante il pranzo (sfrutta i 20g di Olio EVO per l'assorbimento).</div>
+                    </div>
+                    <div class="p-3 bg-surface border border-border rounded">
+                        <div class="font-semibold text-ink mb-0.5">4. Pre-Nanna</div>
+                        <div class="text-muted"><span class="mono-num font-medium text-ink">1 stick Cortisol Manager</span> 30-40 min prima di dormire (sostituisce il magnesio).</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ==========================================
+             SEZIONE 2: COSTRUTTORE PASTI & FREQUENZE
+             ========================================== -->
+        <section id="tab-costruttore" class="main-section hidden space-y-8">
+            
+            <!-- Interactive Meal Builder -->
+            <div class="bg-panel border border-border rounded p-5">
+                <div class="border-b border-border pb-4 mb-5 flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h2 class="text-base font-semibold text-ink">Calcolatore Metodo delle Tabelle Libere</h2>
+                        <p class="text-xs text-muted">Scegli il pasto, combina o dividi al 50% due fonti della stessa categoria (Pag. 2, 6, 8, 9 del piano).</p>
+                    </div>
+                    <div class="flex space-x-1 bg-surface p-1 border border-border rounded">
+                        <button onclick="setBuilderMeal('colazione')" id="b-meal-colazione" class="b-meal-btn px-3 py-1 text-xs font-medium rounded bg-ink text-white">Colazione</button>
+                        <button onclick="setBuilderMeal('pranzo')" id="b-meal-pranzo" class="b-meal-btn px-3 py-1 text-xs font-medium rounded text-muted hover:text-ink">Pranzo</button>
+                        <button onclick="setBuilderMeal('cena')" id="b-meal-cena" class="b-meal-btn px-3 py-1 text-xs font-medium rounded text-muted hover:text-ink">Cena</button>
+                    </div>
+                </div>
+
+                <!-- Builder Controls -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    
+                    <!-- PROTEINE -->
+                    <div class="border border-border rounded p-4 bg-surface space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-ink">1. Fonte Proteica</span>
+                            <label class="text-[11px] text-muted flex items-center space-x-1 cursor-pointer">
+                                <input type="checkbox" id="split-prot" onchange="renderBuilder()">
+                                <span>Dividi 50/50</span>
+                            </label>
+                        </div>
+                        <select id="sel-prot-1" onchange="renderBuilder()" class="w-full text-xs border border-border rounded p-2 bg-white text-ink font-medium focus:outline-none focus:border-ink"></select>
+                        <select id="sel-prot-2" onchange="renderBuilder()" class="w-full text-xs border border-border rounded p-2 bg-white text-ink font-medium focus:outline-none focus:border-ink hidden"></select>
+                        <div id="legumi-rule-box" class="hidden pt-2 border-t border-border">
+                            <label class="text-[11px] font-medium text-amber-800 bg-amber-50 border border-amber-200 rounded p-2 block">
+                                <strong>Regola Legumi attiva:</strong> Carboidrati dimezzati automaticamente (Pag. 9).
+                                <div class="mt-1.5 flex items-center space-x-1.5">
+                                    <input type="checkbox" id="legumi-zero-carbo" onchange="renderBuilder()">
+                                    <span>Azzera del tutto i carbo e abbina 2ª proteina (Pag. 15)</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- CARBOIDRATI -->
+                    <div class="border border-border rounded p-4 bg-surface space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-ink">2. Fonte Carboidrati</span>
+                            <label class="text-[11px] text-muted flex items-center space-x-1 cursor-pointer">
+                                <input type="checkbox" id="split-carb" onchange="renderBuilder()">
+                                <span>Dividi 50/50</span>
+                            </label>
+                        </div>
+                        <select id="sel-carb-1" onchange="renderBuilder()" class="w-full text-xs border border-border rounded p-2 bg-white text-ink font-medium focus:outline-none focus:border-ink"></select>
+                        <select id="sel-carb-2" onchange="renderBuilder()" class="w-full text-xs border border-border rounded p-2 bg-white text-ink font-medium focus:outline-none focus:border-ink hidden"></select>
+                        <p class="text-[11px] text-subtle">Es: a cena puoi fare 50% Patate (300g) + 50% Pane (115g).</p>
+                    </div>
+
+                    <!-- GRASSI -->
+                    <div class="border border-border rounded p-4 bg-surface space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-semibold uppercase tracking-wider text-ink">3. Fonte Grassi</span>
+                        </div>
+                        <select id="sel-fat-1" onchange="renderBuilder()" class="w-full text-xs border border-border rounded p-2 bg-white text-ink font-medium focus:outline-none focus:border-ink"></select>
+                        <p class="text-[11px] text-subtle">A colazione sono inclusi anche 20g di miele (o nello spuntino).</p>
+                    </div>
+                </div>
+
+                <!-- Builder Output Receipt -->
+                <div class="mt-5 p-4 bg-ink text-white rounded flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <div class="text-[11px] uppercase tracking-wider text-neutral-400 mb-1">Piatto Calcolato (Peso a crudo e netto scarti)</div>
+                        <div id="builder-output-text" class="text-sm font-medium mono-num space-y-1"></div>
+                    </div>
+                    <button onclick="copyBuilderOutput()" class="px-3 py-1.5 bg-neutral-800 hover:bg-neutral-700 text-xs mono-num rounded border border-neutral-600 shrink-0">
+                        Copia Composizione
+                    </button>
+                </div>
+            </div>
+
+            <!-- Weekly Frequency Tracker -->
+            <div class="bg-panel border border-border rounded p-5">
+                <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3 mb-4">
+                    <div>
+                        <h3 class="text-sm font-semibold text-ink uppercase tracking-wider">Tracker Frequenze Settimanali (Pag. 2)</h3>
+                        <p class="text-xs text-muted">Spunta i pasti man mano che li consumi durante la settimana.</p>
+                    </div>
+                    <button onclick="resetFrequencies()" class="text-xs text-muted hover:text-ink underline mono-num">Azzera Settimana</button>
+                </div>
+                <div id="freq-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
+            </div>
+
+        </section>
+
+
+        <!-- ==========================================
+             SEZIONE 3: RICETTE & REGOLE COTTURA
+             ========================================== -->
+        <section id="tab-regole" class="main-section hidden space-y-6">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                
+                <!-- Pasta e Ceci -->
+                <div class="bg-panel border border-border rounded p-5 space-y-3">
+                    <div class="flex items-center justify-between border-b border-border pb-2.5">
+                        <h3 class="font-semibold text-sm text-ink">1. Pasta e Ceci Cremosa (Regola Legumi)</h3>
+                        <span class="mono-num text-xs bg-surface border border-border px-2 py-0.5 rounded">Pranzo</span>
+                    </div>
+                    <div class="text-xs text-muted space-y-2 leading-relaxed">
+                        <p class="mono-num text-ink font-medium">80g Pasta normale + 120g Ceci in scatola (o 70g secchi) + 20g Olio EVO + 1 cucchiaio Parmigiano.</p>
+                        <ol class="list-decimal list-inside space-y-1.5">
+                            <li><strong>Sciacqua i ceci:</strong> versa i 120g di ceci nello scolapasta e sciacquali sotto acqua corrente. <strong>NON usare mai l'acqua del barattolo o di cottura dei legumi</strong> (Pag. 14).</li>
+                            <li><strong>Base digestiva:</strong> fai rosolare nei 20g di Olio EVO un trito di carota, sedano (gambo e foglie) e cipolla, oppure aglio e rosmarino (migliora la digestione dei legumi).</li>
+                            <li><strong>La cremina:</strong> unisci i ceci in padella per 2 minuti, aggiungi mezzo bicchiere di acqua calda pulita e <strong>schiaccia 1/3 dei ceci con la forchetta</strong>.</li>
+                            <li><strong>Mantecatura:</strong> scola gli 80g di pasta al dente direttamente nella padella con i ceci, gira per 1 minuto (facoltativo: 1 cucchiaino di concentrato di pomodoro) e chiudi col parmigiano.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Panino Fuori Porta -->
+                <div class="bg-panel border border-border rounded p-5 space-y-3">
+                    <div class="flex items-center justify-between border-b border-border pb-2.5">
+                        <h3 class="font-semibold text-sm text-ink">2. Panino Frittata "Giornata Fuori Porta"</h3>
+                        <span class="mono-num text-xs bg-surface border border-border px-2 py-0.5 rounded">~1050 Kcal</span>
+                    </div>
+                    <div class="text-xs text-muted space-y-2 leading-relaxed">
+                        <p class="mono-num text-ink font-medium">230g Pane fresco + Frittata (2 Uova + 200g Albume) + 20g Olio EVO.</p>
+                        <ul class="list-disc list-inside space-y-1.5">
+                            <li><strong>Inversione Pasti:</strong> la frittata con 2 uova + 200g albume corrisponde alla quota proteica della <strong>Cena</strong>. Usandola nel panino a pranzo, a cena mangerai la quota proteica del pranzo (<span class="mono-num">120g</span> petto di pollo invece di 200g).</li>
+                            <li><strong>Colazione &amp; Mattina in trasferta:</strong> 1 Banana appena sveglio a casa (<span class="mono-num">~135 kcal</span>) + Panino <span class="mono-num">80g</span> pane fresco con <span class="mono-num">80g</span> fesa di tacchino e <span class="mono-num">10g</span> Olio EVO a metà mattina (<span class="mono-num">~430 kcal</span>).</li>
+                            <li><strong>Pomeriggio:</strong> 250g Frutta + 30g Parmigiano + 30g Proteine in polvere (anche dense in tazza con poca acqua stile crema al cioccolato).</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Pancake / Crepe -->
+                <div class="bg-panel border border-border rounded p-5 space-y-3">
+                    <div class="flex items-center justify-between border-b border-border pb-2.5">
+                        <h3 class="font-semibold text-sm text-ink">3. Pancake / Crepe Rapidi (Pag. 6-7)</h3>
+                        <span class="mono-num text-xs bg-surface border border-border px-2 py-0.5 rounded">~475 Kcal</span>
+                    </div>
+                    <div class="text-xs text-muted space-y-2 leading-relaxed">
+                        <p class="mono-num text-ink font-medium">40g Farina (riso/avena/grano) + 150g Albume + 20g Miele (o 1 banana schiacciata) + 10g Cioccolato &gt;85% + 160g Frutta fresca.</p>
+                        <ul class="list-disc list-inside space-y-1.5">
+                            <li>Mescola farina e albume in una ciotola (puoi aggiungere cannella o cacao amaro).</li>
+                            <li>Cuoci in padella antiaderente calda un paio di minuti per lato.</li>
+                            <li>Guarnisci a fine cottura con i 10g di cioccolato extrafondente (si scioglie col calore), i 20g di miele e affianca i 160g di frutta.</li>
+                            <li>Puoi prepararli la sera prima o cuocerne in abbondanza e congelarli.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Regole Cottura & Digestione -->
+                <div class="bg-panel border border-border rounded p-5 space-y-3">
+                    <div class="flex items-center justify-between border-b border-border pb-2.5">
+                        <h3 class="font-semibold text-sm text-ink">4. Regole Tecniche di Cottura (Pag. 10, 14, 15)</h3>
+                        <span class="mono-num text-xs bg-surface border border-border px-2 py-0.5 rounded">Digestione</span>
+                    </div>
+                    <ul class="text-xs text-muted space-y-2 leading-relaxed list-disc list-inside">
+                        <li><strong>NO Bollitura / Vapore:</strong> aumentano l'acqua nell'alimento, rallentano la digestione e portano fermentazione/gonfiore. Cuoci sempre <strong>in padella con Olio EVO</strong>.</li>
+                        <li><strong>Cottura Uova:</strong> mantieni il tuorlo liquido (occhio di bue, camicia, coque) oppure fai la frittata in padella con olio EVO. <strong>Vietata la frittata al forno</strong> (indigesta).</li>
+                        <li><strong>Cottura Carne:</strong> preferisci cotture veloci (es. scaloppina più digeribile della griglia). Se fatichi a digerirla, marinala prima nel succo di limone.</li>
+                        <li><strong>Trucco Impanatura:</strong> puoi sostituire parte del pane/wasa con il pangrattato (<span class="mono-num">1 Wasa = 2 cucchiai di pangrattato</span>) per impanare pesce o carne.</li>
+                        <li><strong>Alimenti con Scarto:</strong> per pesce intero (testa/lische) o tagli con osso considera il <strong>doppio del peso a crudo</strong>.</li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- ==========================================
+             SEZIONE 4: LISTA DELLA SPESA PULITA
+             ========================================== -->
+        <section id="tab-spesa" class="main-section hidden space-y-6">
+            <div class="bg-panel border border-border rounded p-5">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4 mb-4">
+                    <div>
+                        <h2 class="text-base font-semibold text-ink">Lista della Spesa Filtrata</h2>
+                        <p class="text-xs text-muted">Esclusi automaticamente: verdure, yogurt, molluschi/crostacei, salmone, cosce di pollo, spigola, cotto, farro/quinoa/orzo, lenticchie, frutta secca e burro d'arachidi.</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="resetShoppingList()" class="px-3 py-1.5 text-xs border border-border rounded bg-surface hover:bg-neutral-200 mono-num">Deseleziona Tutto</button>
+                        <button onclick="copyRawShoppingList()" id="btn-copy-spesa" class="px-3 py-1.5 text-xs rounded bg-ink text-white hover:bg-neutral-800 mono-num">Copia Testo Pulito</button>
+                    </div>
+                </div>
+
+                <!-- Raw string preview -->
+                <div class="p-3 bg-surface border border-border rounded text-xs text-muted mb-5 leading-relaxed select-all" id="raw-shopping-text">
+                    Patate, banane, frutta fresca di stagione, limoni, petto di pollo, fesa di tacchino, carne di vitello (hamburger o trita), pesce spada, merluzzo, prosciutto crudo DOP, bresaola, fesa di tacchino affettato, uova intere, albume d'uovo in bottiglia, Parmigiano Reggiano, pasta più tipi, riso basmati e riso poke, ceci, fagioli, tonno al naturale, sgombro al naturale, cornflakes senza zuccheri aggiunti, miele, marmellata, cioccolato extrafondente (&gt;85%), olio extravergine di oliva, curcuma, pepe, rosmarino, erbe aromatiche miste, acqua (con residuo fisso &gt; 200 mg/dl).
+                </div>
+
+                <!-- Interactive Checkboxes -->
+                <div id="shopping-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5"></div>
+            </div>
+        </section>
+
+
+        <!-- ==========================================
+             SEZIONE 5: ASSISTENTE NUTRIZIONALE GEMINI AI
+             ========================================== -->
+        <section id="sezione-chat" class="pt-4 border-t border-border">
+            <div class="bg-panel border border-border rounded overflow-hidden">
+                
+                <!-- Chat Header & API Key Config -->
+                <div class="bg-ink text-white px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center space-x-2.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                        <h2 class="text-xs font-semibold uppercase tracking-wider mono-num">Assistente Piano Tartamella · Gemini AI</h2>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select id="gemini-model" class="bg-neutral-900 text-neutral-200 border border-neutral-700 rounded px-2 py-1 text-xs mono-num focus:outline-none">
+                            <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                            <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+                        </select>
+                        <div class="flex items-center bg-neutral-900 border border-neutral-700 rounded px-2 py-1">
+                            <input type="password" id="gemini-api-key" placeholder="Incolla GEMINI_API_KEY..." class="bg-transparent text-xs text-white placeholder-neutral-500 focus:outline-none w-44 mono-num" oninput="saveApiKey()">
+                            <button onclick="toggleKeyVisibility()" class="text-[11px] text-neutral-400 hover:text-white ml-1.5 mono-num">Mostra</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Prompts Bar -->
+                <div class="px-4 py-2.5 bg-surface border-b border-border flex items-center gap-2 overflow-x-auto no-scrollbar">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-subtle shrink-0">Domande rapide:</span>
+                    <button onclick="sendQuickPrompt('Sono fuori casa a pranzo, cosa compro al volo rispettando i miei macro?')" class="text-xs bg-white border border-border hover:border-ink px-2.5 py-1 rounded whitespace-nowrap transition">Pranzo fuori al volo</button>
+                    <button onclick="sendQuickPrompt('Voglio dividere i carboidrati di stasera (150g base) tra patate e pane fresco: dammi le grammature esatte.')" class="text-xs bg-white border border-border hover:border-ink px-2.5 py-1 rounded whitespace-nowrap transition">50% Patate + 50% Pane a cena</button>
+                    <button onclick="sendQuickPrompt('Ho mangiato 2 uova a colazione, cosa metto a cena per variare e centrare i 200g di blocco proteico?')" class="text-xs bg-white border border-border hover:border-ink px-2.5 py-1 rounded whitespace-nowrap transition">Variare proteine cena</button>
+                    <button onclick="sendQuickPrompt('Dammi una ricetta veloce in padella con 150g di riso basmati, 120g di vitello e 20g di olio EVO.')" class="text-xs bg-white border border-border hover:border-ink px-2.5 py-1 rounded whitespace-nowrap transition">Idea Riso + Vitello</button>
+                </div>
+
+                <!-- Messages Box -->
+                <div id="chat-messages" class="p-4 h-80 overflow-y-auto thin-scroll space-y-3 bg-surface text-xs leading-relaxed">
+                    <div class="p-3 bg-white border border-border rounded max-w-3xl">
+                        <div class="mono-num text-[11px] font-semibold text-muted mb-1">SISTEMA PRONTO</div>
+                        <p class="text-ink">Ho in memoria l'intero piano della Dott.ssa Tartamella (<strong>3.000 kcal: 370g C, 150g P, 100g F</strong>), le tabelle di conversione, la regola dei legumi (dimezza carbo) e le tue esclusioni (niente yogurt, niente molluschi/crostacei). Inserisci la tua API Key in alto a destra o clicca una domanda rapida qui sopra.</p>
+                    </div>
+                </div>
+
+                <!-- Input Bar -->
+                <form onsubmit="handleChatSubmit(event)" class="p-3 bg-white border-t border-border flex items-center gap-2">
+                    <input type="text" id="chat-input" placeholder="Chiedi una sostituzione, un calcolo 50/50 o come incastrare un pasto..." class="flex-grow text-xs border border-border rounded px-3 py-2.5 bg-surface focus:bg-white focus:outline-none focus:border-ink">
+                    <button type="submit" id="chat-submit-btn" class="px-4 py-2.5 bg-ink text-white text-xs font-medium rounded hover:bg-neutral-800 transition mono-num shrink-0">
+                        Invia
+                    </button>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Floating Quick Jump to AI -->
+    <button onclick="scrollToChat()" class="fixed bottom-4 right-4 z-40 bg-ink text-white px-3.5 py-2 rounded border border-neutral-700 text-xs font-medium mono-num flex items-center space-x-2 hover:bg-neutral-800 transition">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span>Chiedi a Gemini</span>
+    </button>
+
+    <!-- ==========================================
+         JAVASCRIPT LOGIC & DATA
+         ========================================== -->
+    <script>
+        // --- STATE ---
+        let isMiniCut = false;
+        let isFuoriPorta = false;
+        let currentDayIndex = 0; // 0 = Lunedì ... 6 = Domenica, 'all' = tutti
+        let waterLiters = parseFloat(localStorage.getItem('pg_water') || '0');
+        let builderMeal = 'pranzo';
+
+        // --- WEEKLY PLAN DATA (Adapted from PDF: NO Yogurt, NO Molluschi/Crostacei) ---
+        const weeklyPlan = [
+            {
+                day: "Lunedì",
+                tag: "Pesce & Uova",
+                colazione: {
+                    title: "Pancake / Crepe",
+                    items: ["40g Farina di riso o avena", "150g Albume", "20g Miele (o 1 banana schiacciata)", "160g Frutta fresca", "10g Cioccolato extrafondente >85%"],
+                    kcal: 475, c: 87, p: 21, f: 6
+                },
+                spuntino1: {
+                    title: "Spuntino Mattina",
+                    items: ["250g Frutta fresca (o 1 Banana)"],
+                    kcal: 150, c: 35, p: 1, f: 0
+                },
+                pranzo: {
+                    title: "Primo + Pesce",
+                    isLegumi: false,
+                    baseCarbGrams: 150,
+                    carbLabel: "Pasta / Riso basmati / Riso poke",
+                    items: ["Verdure a piacimento (inizio pasto)", "180g Pesce spada o Merluzzo (o Tonno al naturale)", "20g Olio EVO a crudo"],
+                    kcal: 980, c: 118, p: 42, f: 24
+                },
+                spuntino2: {
+                    title: "Spuntino Pomeriggio (2+3 accorpati)",
+                    items: ["250g Frutta fresca (o 1 Banana)", "30g Proteine in polvere", "30g Parmigiano Reggiano"],
+                    kcal: 390, c: 37, p: 34, f: 9
+                },
+                cena: {
+                    title: "Frittata in Padella + Patate & Pane",
+                    isLegumi: false,
+                    baseCarbGrams: 400,
+                    carbLabel: "Patate (400g) + 70g Pane fresco",
+                    items: ["Verdure a piacimento (inizio pasto)", "Frittata in padella: 2 Uova + 200g Albume", "1 cucchiaio di Parmigiano (facoltativo)", "20g Olio EVO"],
+                    kcal: 1010, c: 105, p: 48, f: 34
+                }
+            },
+            {
+                day: "Martedì",
+                tag: "Legumi & Carne Bianca",
+                colazione: {
+                    title: "Colazione Salata (Sostituzione Porridge senza yogurt)",
+                    items: ["80g Pane fresco", "80g Fesa di tacchino o Bresaola", "10g Olio EVO", "+ 20g Miele (o nello spuntino)"],
+                    kcal: 490, c: 56, p: 30, f: 13
+                },
+                spuntino1: {
+                    title: "Spuntino Mattina",
+                    items: ["250g Frutta fresca (o 1 Banana)"],
+                    kcal: 150, c: 35, p: 1, f: 0
+                },
+                pranzo: {
+                    title: "Pasta e Ceci Cremosa (Regola Legumi)",
+                    isLegumi: true,
+                    baseCarbGrams: 80,
+                    carbLabel: "Pasta o Riso (Carbo dimezzati per legumi)",
+                    items: ["Verdure a piacimento (inizio pasto)", "120g Ceci cotti sciacquati (o 70g secchi)", "1 cucchiaio Parmigiano Reggiano", "20g Olio EVO"],
+                    kcal: 790, c: 92, p: 24, f: 26
+                },
+                spuntino2: {
+                    title: "Spuntino Pomeriggio (2+3 accorpati)",
+                    items: ["250g Frutta fresca (o 1 Banana)", "30g Proteine in polvere", "30g Parmigiano Reggiano"],
+                    kcal: 390, c: 37, p: 34, f: 9
+                },
+                cena: {
+                    title: "Pollo alla Curcuma / Piastra + Pane",
+                    isLegumi: false,
+                    baseCarbGrams: 230,
+                    carbLabel: "Pane fresco",
+                    items: ["Verdure a piacimento (inizio pasto)", "200g Petto di pollo o tacchino alla curcuma in padella", "20g Olio EVO"],
+                    kcal: 1080, c: 125, p: 62, f: 26
+                }
+            },
+            {
+                day: "Mercoledì",
+                tag: "Affettato/Uova & Pesce",
+                colazione: {
+                    title: "Colazione Salata o Cornflakes",
+                    items: ["80g Pane fresco + 80g Tonno al naturale o Fesa + 10g Olio EVO", "Oppure: 50g Cornflakes senza zuccheri + 150g Albume a frittatina + 160g Frutta + 20g Miele"],
+                    kcal: 460, c: 55, p: 28, f: 12
+                },
+                spuntino1: {
+                    title: "Spuntino Mattina",
+                    items: ["250g Frutta fresca (o 1 Banana)"],
+                    kcal: 150, c: 35, p: 1, f: 0
+                },
+                pranzo: {
+                    title: "Pasta/Riso + Bresaola o Uova",
+                    isLegumi: false,
+                    baseCarbGrams: 150,
+                    carbLabel: "Pasta o Riso basmati/poke",
+                    items: ["Verdure a piacimento (inizio pasto)", "100g Bresaola o Fesa di tacchino (oppure 2 Uova + 120g Albume)", "20g Olio EVO"],
+                    kcal: 960, c: 118, p: 42, f: 25
+                },
+                spuntino2: {
+                    title: "Spuntino Pomeriggio (2+3 accorpati)",
+                    items: ["250g Frutta fresca (o 1 Banana)", "30g Proteine in polvere", "30g Parmigiano Reggiano"],
+                    kcal: 390, c: 37, p: 34, f: 9
+                },
+                cena: {
+                    title: "Pesce + Patate e Pane",
+                    isLegumi: false,
+                    baseCarbGrams: 400,
+                    carbLabel: "Patate (400g) + 70g Pane fresco",
+                    items: ["Insalata di fagiolini e verdure a piacere", "250g Merluzzo/Pesce spada oppure 180g Tonno/Sgombro al naturale", "20g Olio EVO"],
+                    kcal: 990, c: 105, p: 52, f: 24
+                }
+            },
+            {
+                day: "Giovedì",
+                tag: "Parmigiano & Pollo",
+                colazione: {
+                    title: "Pane & Uova",
+                    items: ["80g Pane fresco", "2 Uova a frittatina in padella o occhio di bue", "10g Olio EVO"],
+                    kcal: 450, c: 42, p: 21, f: 21
+                },
+                spuntino1: {
+                    title: "Spuntino Mattina",
+                    items: ["250g Frutta fresca (o 1 Banana)"],
+                    kcal: 150, c: 35, p: 1, f: 0
+                },
+                pranzo: {
+                    title: "Pasta Senatore Cappelli + Parmigiano",
+                    isLegumi: false,
+                    baseCarbGrams: 150,
+                    carbLabel: "Pasta Senatore Cappelli o Riso con sugo/verdure",
+                    items: ["Verdure a piacimento (inizio pasto)", "40g Parmigiano Reggiano", "20g Olio EVO"],
+                    kcal: 920, c: 118, p: 31, f: 33
+                },
+                spuntino2: {
+                    title: "Spuntino Pomeriggio (2+3 accorpati)",
+                    items: ["250g Frutta fresca (o 1 Banana)", "30g Proteine in polvere", "30g Parmigiano Reggiano"],
+                    kcal: 390, c: 37, p: 34, f: 9
+                },
+                cena: {
+                    title: "Petto di Pollo/Tacchino + Pane",
+                    isLegumi: false,
+                    baseCarbGrams: 230,
+                    carbLabel: "Pane fresco",
+                    items: ["Verdure a piacimento (inizio pasto)", "200g Petto di pollo o tacchino in padella", "20g Olio EVO"],
+                    kcal: 1080, c: 125, p: 62, f: 26
+                }
+            },
+            {
+                day: "Venerdì",
+                tag: "Legumi & Frittata",
+                colazione: {
+                    title: "Pancake oppure Pane & Parmigiano",
+                    items: ["Opzione A: Pancake (40g farina + 150g albume + 20g miele + 10g fondente + 160g frutta)", "Opzione B: 80g Pane fresco + 40g Parmigiano e rucola + 10g Olio EVO + 20g Miele"],
+                    kcal: 475, c: 80, p: 22, f: 10
+                },
+                spuntino1: {
+                    title: "Spuntino Mattina",
+                    items: ["250g Frutta fresca (o 1 Banana)"],
+                    kcal: 150, c: 35, p: 1, f: 0
+                },
+                pranzo: {
+                    title: "Pasta e Ceci / Fagioli (Regola Legumi)",
+                    isLegumi: true,
+                    baseCarbGrams: 80,
+                    carbLabel: "Pasta o Riso (Carbo dimezzati per legumi)",
+                    items: ["Verdure a piacimento (inizio pasto)", "120g Ceci o Fagioli cotti (o 70g secchi)", "1 cucchiaio Parmigiano Reggiano", "20g Olio EVO"],
+                    kcal: 790, c: 92, p: 24, f: 26
+                },
+                spuntino2: {
+                    title: "Spuntino Pomeriggio (2+3 accorpati)",
+                    items: ["250g Frutta fresca (o 1 Banana)", "30g Proteine in polvere", "30g Parmigiano Reggiano"],
+                    kcal: 390, c: 37, p: 34, f: 9
+                },
+                cena: {
+                    title: "Frittata in Padella + Patate e Pane",
+                    isLegumi: false,
+                    baseCarbGrams: 400,
+                    carbLabel: "Patate (400g) + 70g Pane fresco",
+                    items: ["Verdure a piacimento (inizio pasto)", "Frittata: 2 Uova + 200g Albume", "1 cucchiaio Parmigiano (facoltativo)", "20g Olio EVO"],
+                    kcal: 1010, c: 105, p: 48, f: 34
+                }
+            },
+            {
+                day: "Sabato",
+                tag: "Carne Rossa & Pasto Libero",
+                colazione: {
+                    title: "Pane & Affettato Magro",
+                    items: ["80g Pane fresco", "60-80g Prosciutto crudo DOP o Bresaola", "10g Olio EVO"],
+                    kcal: 430, c: 42, p: 28, f: 14
+                },
+                spuntino1: {
+                    title: "Spuntino Mattina",
+                    items: ["250g Frutta fresca (o 1 Banana)"],
+                    kcal: 150, c: 35, p: 1, f: 0
+                },
+                pranzo: {
+                    title: "Pasta/Riso + Vitello",
+                    isLegumi: false,
+                    baseCarbGrams: 150,
+                    carbLabel: "Riso o Pasta",
+                    items: ["Verdure a piacimento (inizio pasto)", "120g Carne di vitello (hamburger o tritato nel sugo)", "20g Olio EVO"],
+                    kcal: 980, c: 118, p: 39, f: 28
+                },
+                spuntino2: {
+                    title: "Spuntino Pomeriggio",
+                    items: ["250g Frutta fresca + 30g Proteine in polvere"],
+                    kcal: 270, c: 36, p: 25, f: 1
+                },
+                cena: {
+                    title: "PASTO LIBERO SETTIMANALE",
+                    isFreeMeal: true,
+                    baseCarbGrams: 0,
+                    carbLabel: "Libero",
+                    items: ["Goditi la serata senza contare i macro. Idratati bene prima e dopo."],
+                    kcal: 1200, c: 130, p: 50, f: 50
+                }
+            },
+            {
+                day: "Domenica",
+                tag: "Pesce Spada & Pollo",
+                colazione: {
+                    title: "Pancake o Pane Salato",
+                    items: ["Pancake (40g farina + 150g albume + 20g miele + 10g fondente + 160g frutta)", "Oppure: 80g Pane fresco + 80g Fesa/Crudo DOP + 10g Olio EVO"],
+                    kcal: 475, c: 85, p: 22, f: 8
+                },
+                spuntino1: {
+                    title: "Spuntino Mattina",
+                    items: ["250g Frutta fresca (o 1 Banana)"],
+                    kcal: 150, c: 35, p: 1, f: 0
+                },
+                pranzo: {
+                    title: "Pasta con Pesce Spada e Melanzane + Gelato",
+                    isLegumi: false,
+                    baseCarbGrams: 150,
+                    carbLabel: "Pasta o Riso",
+                    items: ["Verdure a piacimento (inizio pasto)", "180g Pesce spada a cubetti con melanzane", "20g Olio EVO", "+ Gelato (previsto dal menù domenicale)"],
+                    kcal: 1150, c: 145, p: 45, f: 32
+                },
+                spuntino2: {
+                    title: "Spuntino Pomeriggio",
+                    items: ["250g Frutta fresca + 30g Proteine in polvere"],
+                    kcal: 270, c: 36, p: 25, f: 1
+                },
+                cena: {
+                    title: "Petto di Pollo/Tacchino + Pane",
+                    isLegumi: false,
+                    baseCarbGrams: 230,
+                    carbLabel: "Pane fresco",
+                    items: ["Verdure a piacimento (inizio pasto)", "200g Petto di pollo o tacchino grigliato/padella", "20g Olio EVO"],
+                    kcal: 1080, c: 125, p: 62, f: 26
+                }
+            }
+        ];
+
+        // --- WATER TRACKER ---
+        function updateWater(delta) {
+            waterLiters = Math.max(0, Math.min(6, +(waterLiters + delta).toFixed(1)));
+            localStorage.setItem('pg_water', waterLiters);
+            renderWater();
+        }
+        function renderWater() {
+            const el = document.getElementById('water-display');
+            el.textContent = `${waterLiters.toFixed(1)} / 3.0 L`;
+            if (waterLiters >= 3.0) {
+                el.className = "px-2.5 py-0.5 bg-emerald-950 text-emerald-300 border border-emerald-700 rounded text-xs mono-num font-semibold";
+            } else {
+                el.className = "px-2.5 py-0.5 bg-surface border border-border rounded text-xs mono-num font-semibold text-ink";
+            }
+        }
+
+        // --- TOGGLES: MINI-CUT & FUORI PORTA ---
+        function toggleMiniCut() {
+            isMiniCut = document.getElementById('toggle-minicut').checked;
+            document.getElementById('top-kcal').textContent = isMiniCut ? "~2400 KCAL (MINI-CUT)" : "3000 KCAL";
+            document.getElementById('top-carbs').textContent = isMiniCut ? "~220g (-50% P/C)" : "370g";
+            renderDayView();
+            renderBuilder();
+        }
+
+        function toggleFuoriPorta() {
+            isFuoriPorta = document.getElementById('toggle-fuoriporta').checked;
+            renderDayView();
+        }
+
+        // --- RENDER 7-DAY PLAN ---
+        function selectDay(index) {
+            currentDayIndex = index;
+            const buttons = document.querySelectorAll('.day-btn');
+            buttons.forEach((btn, idx) => {
+                if (idx === index) {
+                    btn.className = "day-btn px-3 py-1.5 rounded text-xs font-semibold bg-ink text-white transition";
+                } else {
+                    btn.className = "day-btn px-3 py-1.5 rounded text-xs font-medium text-muted hover:text-ink hover:bg-surface transition";
+                }
+            });
+            const allBtn = document.getElementById('btn-all-days');
+            if (index === 'all') {
+                allBtn.className = "px-3 py-1.5 rounded text-xs font-semibold bg-ink text-white transition mono-num";
+            } else {
+                allBtn.className = "px-3 py-1.5 rounded text-xs font-medium border border-border bg-surface hover:bg-neutral-200 transition mono-num";
+            }
+            renderDayView();
+        }
+
+        function formatMealCarbLine(meal) {
+            if (meal.isFreeMeal) return "Pasto Libero";
+            if (meal.carbLabel.includes("Patate (400g)")) {
+                return isMiniCut ? "200g Patate + 35g Pane fresco (Mini-Cut -50%)" : "400g Patate + 70g Pane fresco";
+            }
+            const g = isMiniCut ? Math.round(meal.baseCarbGrams / 2) : meal.baseCarbGrams;
+            return `${g}g ${meal.carbLabel}${isMiniCut ? ' (Mini-Cut -50%)' : ''}`;
+        }
+
+        function buildDayCardHTML(dayObj) {
+            // If Fuori Porta is active, override with the exact Out-of-Town template agreed with Piergiorgio
+            if (isFuoriPorta) {
+                const cenaCarb = isMiniCut ? "75g Pasta o Riso (Mini-Cut)" : "150g Pasta o Riso";
+                const pranzoPane = isMiniCut ? "115g Pane fresco (Mini-Cut)" : "230g Pane fresco";
+                return `
+                <div class="bg-panel border border-border rounded overflow-hidden">
+                    <div class="px-5 py-3.5 bg-surface border-b border-border flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center space-x-2.5">
+                            <h2 class="text-sm font-bold uppercase tracking-wider text-ink">${dayObj.day} — ASSETTO FUORI PORTA</h2>
+                            <span class="text-xs px-2 py-0.5 rounded bg-blue-50 text-accent border border-blue-200 font-medium mono-num">Panino Frittata + Inversione P/C</span>
+                        </div>
+                        <div class="text-xs mono-num text-muted">
+                            Totale: <strong class="text-ink">~2985 kcal</strong> · C: <strong>345g</strong> · P: <strong>155g</strong> · F: <strong>82g</strong>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-border text-[11px] uppercase tracking-wider text-subtle bg-surface">
+                                    <th class="py-2.5 px-4 w-44">Pasto</th>
+                                    <th class="py-2.5 px-4">Alimenti e Quantità (Netto a crudo)</th>
+                                    <th class="py-2.5 px-4 text-right mono-num w-24">Kcal</th>
+                                    <th class="py-2.5 px-4 text-right mono-num w-36">Macro (C / P / F)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border">
+                                <tr>
+                                    <td class="py-3 px-4 font-semibold text-ink">Colazione (A casa)</td>
+                                    <td class="py-3 px-4"><span class="mono-num font-medium">1 Banana grande (~150g)</span> + 1-2 bicchieri d'acqua appena sveglio</td>
+                                    <td class="py-3 px-4 text-right mono-num">135</td>
+                                    <td class="py-3 px-4 text-right mono-num text-muted">35C · 1P · 0F</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-3 px-4 font-semibold text-ink">Metà Mattina (Zaino)</td>
+                                    <td class="py-3 px-4"><span class="mono-num font-medium">80g Pane fresco + 80g Fesa di tacchino + 10g Olio EVO</span></td>
+                                    <td class="py-3 px-4 text-right mono-num">430</td>
+                                    <td class="py-3 px-4 text-right mono-num text-muted">40C · 30P · 13F</td>
+                                </tr>
+                                <tr class="bg-blue-50/30">
+                                    <td class="py-3 px-4 font-semibold text-ink">Pranzo (Panino Sacco)</td>
+                                    <td class="py-3 px-4"><span class="mono-num font-semibold text-ink">${pranzoPane} + Frittata (2 Uova + 200g Albume) + 20g Olio EVO</span> + Verdura cruda</td>
+                                    <td class="py-3 px-4 text-right mono-num font-semibold">1050</td>
+                                    <td class="py-3 px-4 text-right mono-num text-muted">115C · 50P · 32F</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-3 px-4 font-semibold text-ink">Spuntino Pomeriggio</td>
+                                    <td class="py-3 px-4"><span class="mono-num font-medium">250g Frutta o 1 Banana + 30g Parmigiano + 30g Proteine in polvere</span></td>
+                                    <td class="py-3 px-4 text-right mono-num">390</td>
+                                    <td class="py-3 px-4 text-right mono-num text-muted">37C · 34P · 9F</td>
+                                </tr>
+                                <tr>
+                                    <td class="py-3 px-4 font-semibold text-ink">Cena (Rientro a casa)</td>
+                                    <td class="py-3 px-4">Verdure a piacere + <span class="mono-num font-medium">${cenaCarb} + 120g Petto di pollo</span> (quota invertita col pranzo) + <span class="mono-num font-medium">20g Olio EVO</span></td>
+                                    <td class="py-3 px-4 text-right mono-num">980</td>
+                                    <td class="py-3 px-4 text-right mono-num text-muted">118C · 40P · 28F</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+            }
+
+            // Standard Day Card
+            const pCarbLine = formatMealCarbLine(dayObj.pranzo);
+            const cCarbLine = formatMealCarbLine(dayObj.cena);
+
+            return `
+            <div class="bg-panel border border-border rounded overflow-hidden">
+                <div class="px-5 py-3.5 bg-surface border-b border-border flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center space-x-2.5">
+                        <h2 class="text-sm font-bold uppercase tracking-wider text-ink">${dayObj.day}</h2>
+                        <span class="text-xs px-2 py-0.5 rounded bg-white border border-border text-muted mono-num">${dayObj.tag}</span>
+                    </div>
+                    <div class="text-xs mono-num text-muted">
+                        Target: <strong class="text-ink">${isMiniCut ? '~2400' : '~3000'} kcal</strong> · P: <strong>~150g</strong>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="border-b border-border text-[11px] uppercase tracking-wider text-subtle bg-surface">
+                                <th class="py-2.5 px-4 w-44">Pasto</th>
+                                <th class="py-2.5 px-4">Composizione &amp; Grammature (Peso a crudo)</th>
+                                <th class="py-2.5 px-4 text-right mono-num w-24">Stima Kcal</th>
+                                <th class="py-2.5 px-4 text-right mono-num w-36">Macro (C / P / F)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border">
+                            <!-- Colazione -->
+                            <tr>
+                                <td class="py-3.5 px-4 align-top">
+                                    <div class="font-semibold text-ink">Colazione</div>
+                                    <div class="text-[11px] text-subtle">${dayObj.colazione.title}</div>
+                                </td>
+                                <td class="py-3.5 px-4 align-top">
+                                    <ul class="space-y-1 text-ink">
+                                        ${dayObj.colazione.items.map(i => `<li class="mono-num">• ${i}</li>`).join('')}
+                                    </ul>
+                                </td>
+                                <td class="py-3.5 px-4 align-top text-right mono-num">${dayObj.colazione.kcal}</td>
+                                <td class="py-3.5 px-4 align-top text-right mono-num text-muted">${dayObj.colazione.c}C · ${dayObj.colazione.p}P · ${dayObj.colazione.f}F</td>
+                            </tr>
+                            <!-- Spuntino 1 -->
+                            <tr>
+                                <td class="py-3 px-4 align-top">
+                                    <div class="font-semibold text-ink">Metà Mattina</div>
+                                    <div class="text-[11px] text-subtle">Spuntino 1 (Invertibile con colazione)</div>
+                                </td>
+                                <td class="py-3 px-4 align-top mono-num text-ink">• ${dayObj.spuntino1.items.join(', ')}</td>
+                                <td class="py-3 px-4 align-top text-right mono-num">${dayObj.spuntino1.kcal}</td>
+                                <td class="py-3 px-4 align-top text-right mono-num text-muted">${dayObj.spuntino1.c}C · ${dayObj.spuntino1.p}P · ${dayObj.spuntino1.f}F</td>
+                            </tr>
+                            <!-- Pranzo -->
+                            <tr>
+                                <td class="py-3.5 px-4 align-top">
+                                    <div class="font-semibold text-ink">Pranzo</div>
+                                    <div class="text-[11px] text-subtle">${dayObj.pranzo.title}</div>
+                                </td>
+                                <td class="py-3.5 px-4 align-top">
+                                    <div class="mono-num font-semibold text-ink mb-1">• ${pCarbLine}</div>
+                                    <ul class="space-y-1 text-muted">
+                                        ${dayObj.pranzo.items.map(i => `<li class="mono-num">• ${i}</li>`).join('')}
+                                    </ul>
+                                </td>
+                                <td class="py-3.5 px-4 align-top text-right mono-num">${isMiniCut ? dayObj.pranzo.kcal - 260 : dayObj.pranzo.kcal}</td>
+                                <td class="py-3.5 px-4 align-top text-right mono-num text-muted">${dayObj.pranzo.c}C · ${dayObj.pranzo.p}P · ${dayObj.pranzo.f}F</td>
+                            </tr>
+                            <!-- Spuntino 2 -->
+                            <tr>
+                                <td class="py-3 px-4 align-top">
+                                    <div class="font-semibold text-ink">Pomeriggio</div>
+                                    <div class="text-[11px] text-subtle">${dayObj.spuntino2.title}</div>
+                                </td>
+                                <td class="py-3 px-4 align-top mono-num text-ink">• ${dayObj.spuntino2.items.join(' + ')}</td>
+                                <td class="py-3 px-4 align-top text-right mono-num">${dayObj.spuntino2.kcal}</td>
+                                <td class="py-3 px-4 align-top text-right mono-num text-muted">${dayObj.spuntino2.c}C · ${dayObj.spuntino2.p}P · ${dayObj.spuntino2.f}F</td>
+                            </tr>
+                            <!-- Cena -->
+                            <tr>
+                                <td class="py-3.5 px-4 align-top">
+                                    <div class="font-semibold text-ink">Cena</div>
+                                    <div class="text-[11px] text-subtle">${dayObj.cena.title}</div>
+                                </td>
+                                <td class="py-3.5 px-4 align-top">
+                                    <div class="mono-num font-semibold text-ink mb-1">• ${cCarbLine}</div>
+                                    <ul class="space-y-1 text-muted">
+                                        ${dayObj.cena.items.map(i => `<li class="mono-num">• ${i}</li>`).join('')}
+                                    </ul>
+                                </td>
+                                <td class="py-3.5 px-4 align-top text-right mono-num">${isMiniCut && !dayObj.cena.isFreeMeal ? dayObj.cena.kcal - 260 : dayObj.cena.kcal}</td>
+                                <td class="py-3.5 px-4 align-top text-right mono-num text-muted">${dayObj.cena.c}C · ${dayObj.cena.p}P · ${dayObj.cena.f}F</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>`;
+        }
+
+        function renderDayView() {
+            const alertsEl = document.getElementById('banner-alerts');
+            let alertsHTML = '';
+            if (isMiniCut) {
+                alertsHTML += `<div class="p-3 rounded bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-center justify-between">
+                    <span><strong>MODALITÀ MINI-CUT ATTIVA (Pag. 9):</strong> Carboidrati di Pranzo e Cena dimezzati (-50%) per 1 settimana.</span>
+                    <span class="mono-num font-semibold">1 settimana ogni 4</span>
+                </div>`;
+            }
+            if (isFuoriPorta) {
+                alertsHTML += `<div class="p-3 rounded bg-blue-50 border border-blue-200 text-blue-900 text-xs flex items-center justify-between">
+                    <span><strong>MODALITÀ GIORNATA FUORI PORTA ATTIVA:</strong> Banana a colazione + Panino 80g fesa mattina + Panino 230g Frittata (2 uova + 200g albume) a pranzo.</span>
+                    <span class="mono-num font-semibold">~2985 Kcal</span>
+                </div>`;
+            }
+            if (alertsHTML) {
+                alertsEl.innerHTML = alertsHTML;
+                alertsEl.classList.remove('hidden');
+            } else {
+                alertsEl.classList.add('hidden');
+            }
+
+            const container = document.getElementById('day-view-container');
+            if (currentDayIndex === 'all') {
+                container.innerHTML = weeklyPlan.map(d => buildDayCardHTML(d)).join('');
+            } else {
+                container.innerHTML = buildDayCardHTML(weeklyPlan[currentDayIndex]);
+            }
+        }
+
+        // --- SECTION 2: MEAL BUILDER (TABELLE LIBERE) ---
+        const builderData = {
+            colazione: {
+                carbs: [
+                    { name: "Pane fresco", g: 80 },
+                    { name: "Farina di riso / avena / grani antichi", g: 60 },
+                    { name: "Cornflakes senza zuccheri", g: 50 },
+                    { name: "Fette biscottate integrali", g: 60 },
+                    { name: "Gallette di riso/mais (5 gallette)", g: 50 },
+                    { name: "Frutta fresca", g: 480 }
+                ],
+                prots: [
+                    { name: "Albume d'uovo", g: 150, isLegumi: false },
+                    { name: "Uova intere (2 uova)", g: 120, unit: "2 uova", isLegumi: false },
+                    { name: "Fesa di tacchino / Bresaola / Crudo DOP", g: 80, isLegumi: false },
+                    { name: "Tonno o Sgombro al naturale", g: 80, isLegumi: false },
+                    { name: "Parmigiano Reggiano", g: 50, isLegumi: false },
+                    { name: "Proteine in polvere", g: 30, isLegumi: false }
+                ],
+                fats: [
+                    { name: "Olio extravergine d'oliva", g: 10 },
+                    { name: "Cioccolato fondente >85%", g: 10 },
+                    { name: "Avocado", g: 60 }
+                ]
+            },
+            pranzo: {
+                carbs: [
+                    { name: "Pasta (es. Senatore Cappelli)", g: 150 },
+                    { name: "Riso basmati / Riso poke", g: 150 },
+                    { name: "Pane fresco", g: 230 },
+                    { name: "Patate", g: 600 },
+                    { name: "Gnocchi di patate", g: 300 },
+                    { name: "Gallette di riso/mais", g: 150 }
+                ],
+                prots: [
+                    { name: "Petto di pollo / Fesa di tacchino", g: 120, isLegumi: false },
+                    { name: "Carne rossa (Vitello hamburger/trita)", g: 120, isLegumi: false },
+                    { name: "Pesce spada / Merluzzo fresco", g: 180, isLegumi: false },
+                    { name: "Tonno o Sgombro al naturale", g: 120, isLegumi: false },
+                    { name: "Uova (2 uova + 120g Albume)", g: 220, unit: "2 uova + 120g albume", isLegumi: false },
+                    { name: "Solo Albume", g: 250, isLegumi: false },
+                    { name: "Prosciutto crudo DOP / Bresaola / Fesa", g: 100, isLegumi: false },
+                    { name: "Ceci o Fagioli cotti (Scolati)", g: 120, isLegumi: true },
+                    { name: "Ceci o Fagioli secchi", g: 70, isLegumi: true },
+                    { name: "Parmigiano Reggiano (max 1-2x/sett)", g: 40, isLegumi: false }
+                ],
+                fats: [
+                    { name: "Olio extravergine d'oliva", g: 20 },
+                    { name: "Avocado", g: 80 },
+                    { name: "Olive", g: 80 }
+                ]
+            },
+            cena: {
+                carbs: [
+                    { name: "Pane fresco", g: 230 },
+                    { name: "Patate", g: 600 },
+                    { name: "Pasta (es. Senatore Cappelli)", g: 150 },
+                    { name: "Riso basmati / Riso poke", g: 150 },
+                    { name: "Gnocchi di patate", g: 300 }
+                ],
+                prots: [
+                    { name: "Petto di pollo / Fesa di tacchino", g: 200, isLegumi: false },
+                    { name: "Carne rossa (Vitello)", g: 200, isLegumi: false },
+                    { name: "Pesce spada / Merluzzo fresco", g: 250, isLegumi: false },
+                    { name: "Uova (2 uova medie + 200g Albume)", g: 300, unit: "2 uova + 200g albume", isLegumi: false },
+                    { name: "Tonno o Sgombro al naturale", g: 180, isLegumi: false },
+                    { name: "Prosciutto crudo DOP / Bresaola / Fesa", g: 150, isLegumi: false },
+                    { name: "Ceci o Fagioli cotti", g: 200, isLegumi: true },
+                    { name: "Ceci o Fagioli secchi", g: 90, isLegumi: true },
+                    { name: "Parmigiano Reggiano (max 1-2x/sett)", g: 70, isLegumi: false }
+                ],
+                fats: [
+                    { name: "Olio extravergine d'oliva", g: 20 },
+                    { name: "Avocado", g: 80 },
+                    { name: "Olive", g: 80 }
+                ]
+            }
+        };
+
+        function setBuilderMeal(meal) {
+            builderMeal = meal;
+            ['colazione', 'pranzo', 'cena'].forEach(m => {
+                const btn = document.getElementById('b-meal-' + m);
+                if (m === meal) {
+                    btn.className = "b-meal-btn px-3 py-1 text-xs font-medium rounded bg-ink text-white";
+                } else {
+                    btn.className = "b-meal-btn px-3 py-1 text-xs font-medium rounded text-muted hover:text-ink";
+                }
+            });
+            populateBuilderSelects();
+            renderBuilder();
+        }
+
+        function populateBuilderSelects() {
+            const data = builderData[builderMeal];
+            const fill = (id, arr, offset = 0) => {
+                const sel = document.getElementById(id);
+                sel.innerHTML = arr.map((item, i) => `<option value="${i}">${item.name}</option>`).join('');
+                sel.selectedIndex = offset % arr.length;
+            };
+            fill('sel-prot-1', data.prots, 0);
+            fill('sel-prot-2', data.prots, 1);
+            fill('sel-carb-1', data.carbs, 0);
+            fill('sel-carb-2', data.carbs, 1);
+            fill('sel-fat-1', data.fats, 0);
+        }
+
+        function renderBuilder() {
+            const data = builderData[builderMeal];
+            const splitProt = document.getElementById('split-prot').checked;
+            const splitCarb = document.getElementById('split-carb').checked;
+
+            document.getElementById('sel-prot-2').classList.toggle('hidden', !splitProt);
+            document.getElementById('sel-carb-2').classList.toggle('hidden', !splitCarb);
+
+            const p1 = data.prots[document.getElementById('sel-prot-1').value || 0];
+            const p2 = data.prots[document.getElementById('sel-prot-2').value || 0];
+            const c1 = data.carbs[document.getElementById('sel-carb-1').value || 0];
+            const c2 = data.carbs[document.getElementById('sel-carb-2').value || 0];
+            const f1 = data.fats[document.getElementById('sel-fat-1').value || 0];
+
+            const hasLegumi = p1.isLegumi || (splitProt && p2.isLegumi);
+            const legumiBox = document.getElementById('legumi-rule-box');
+            legumiBox.classList.toggle('hidden', !hasLegumi);
+
+            const zeroCarboLegumi = hasLegumi && document.getElementById('legumi-zero-carbo').checked;
+
+            // Carb multiplier (0.5 if legumi, another 0.5 if Mini-Cut on pranzo/cena)
+            let carbMult = 1;
+            if (hasLegumi) carbMult *= 0.5;
+            if (isMiniCut && (builderMeal === 'pranzo' || builderMeal === 'cena')) carbMult *= 0.5;
+
+            // Format Protein text
+            let protText = '';
+            if (!splitProt) {
+                protText = p1.unit ? `${p1.unit} (${p1.name})` : `${p1.g}g ${p1.name}`;
+            } else {
+                const g1 = Math.round(p1.g / 2);
+                const g2 = Math.round(p2.g / 2);
+                protText = `${g1}g ${p1.name} + ${g2}g ${p2.name}`;
+            }
+
+            // Format Carb text
+            let carbText = '';
+            if (zeroCarboLegumi) {
+                carbText = `0g Carboidrati (Opzione Pag. 15: Legumi + Fonte Proteica senza carbo)`;
+            } else if (!splitCarb) {
+                const g = Math.round(c1.g * carbMult);
+                carbText = `${g}g ${c1.name}`;
+            } else {
+                const g1 = Math.round((c1.g / 2) * carbMult);
+                const g2 = Math.round((c2.g / 2) * carbMult);
+                carbText = `${g1}g ${c1.name} + ${g2}g ${c2.name}`;
+            }
+
+            const fatText = `${f1.g}g ${f1.name}${builderMeal === 'colazione' ? ' + 20g Miele' : ' + Verdure a inizio pasto'}`;
+
+            document.getElementById('builder-output-text').innerHTML = `
+                <div><span class="text-neutral-400">CARBOIDRATI:</span> ${carbText}</div>
+                <div><span class="text-neutral-400">PROTEINE:</span> ${protText}</div>
+                <div><span class="text-neutral-400">GRASSI &amp; EXTRA:</span> ${fatText}</div>
+            `;
+        }
+
+        function copyBuilderOutput() {
+            const text = document.getElementById('builder-output-text').innerText;
+            copyTextToClipboard(text);
+        }
+
+        // --- FREQUENCY TRACKER ---
+        const freqCategories = [
+            { id: 'pesce_fresco', name: 'Pesce fresco/surgelato', target: '2 volte / sett', max: 2 },
+            { id: 'pesce_cons', name: 'Tonno / Sgombro in scatola', target: 'max 1-2 volte / sett', max: 2 },
+            { id: 'legumi', name: 'Legumi (Ceci / Fagioli)', target: '2-3 volte / sett', max: 3 },
+            { id: 'uova', name: 'Uova (minimo 6 a settimana)', target: 'libere (6+ / sett)', max: 6 },
+            { id: 'carne_bianca', name: 'Carne bianca (Pollo / Tacchino)', target: 'max 2 volte / sett', max: 2 },
+            { id: 'carne_rossa', name: 'Carne rossa (Vitello)', target: 'max 1 volta / sett', max: 1 },
+            { id: 'affettati', name: 'Affettati magri (Fesa/Bresaola/Crudo)', target: 'max 2 volte / sett', max: 2 },
+            { id: 'formaggi', name: 'Formaggi (Parmigiano)', target: 'max 2 volte / sett', max: 2 }
+        ];
+
+        function renderFrequencies() {
+            const saved = JSON.parse(localStorage.getItem('pg_freq') || '{}');
+            const grid = document.getElementById('freq-grid');
+            grid.innerHTML = freqCategories.map(cat => {
+                const count = saved[cat.id] || 0;
+                let boxes = '';
+                for (let i = 1; i <= cat.max; i++) {
+                    const checked = i <= count;
+                    boxes += `<button onclick="toggleFreq('${cat.id}', ${i})" class="w-6 h-6 rounded border ${checked ? 'bg-ink text-white border-ink' : 'bg-white text-subtle border-border'} text-xs mono-num font-bold">${i}</button>`;
+                }
+                return `
+                <div class="p-3 bg-surface border border-border rounded flex flex-col justify-between">
+                    <div>
+                        <div class="text-xs font-semibold text-ink">${cat.name}</div>
+                        <div class="text-[11px] text-muted mono-num mb-2">${cat.target}</div>
+                    </div>
+                    <div class="flex items-center space-x-1">${boxes}</div>
+                </div>`;
+            }).join('');
+        }
+
+        function toggleFreq(id, val) {
+            const saved = JSON.parse(localStorage.getItem('pg_freq') || '{}');
+            saved[id] = (saved[id] === val) ? val - 1 : val;
+            localStorage.setItem('pg_freq', JSON.stringify(saved));
+            renderFrequencies();
+        }
+
+        function resetFrequencies() {
+            localStorage.removeItem('pg_freq');
+            renderFrequencies();
+        }
+
+        // --- SECTION 4: SHOPPING LIST ---
+        const shoppingItems = [
+            "Patate", "Banane", "Frutta fresca di stagione", "Limoni",
+            "Petto di pollo", "Fesa di tacchino", "Carne di vitello (hamburger o trita)",
+            "Pesce spada", "Merluzzo", "Prosciutto crudo DOP", "Bresaola", "Fesa di tacchino affettato",
+            "Uova intere", "Albume d'uovo in bottiglia", "Parmigiano Reggiano",
+            "Pasta più tipi", "Riso basmati e riso poke", "Ceci", "Fagioli",
+            "Tonno al naturale", "Sgombro al naturale", "Cornflakes senza zuccheri aggiunti",
+            "Miele", "Marmellata", "Cioccolato extrafondente (>85%)",
+            "Olio extravergine di oliva", "Curcuma", "Pepe", "Rosmarino", "Erbe aromatiche miste",
+            "Acqua (residuo fisso > 200 mg/dl)"
+        ];
+
+        function renderShoppingList() {
+            const checkedMap = JSON.parse(localStorage.getItem('pg_shop') || '{}');
+            const grid = document.getElementById('shopping-grid');
+            grid.innerHTML = shoppingItems.map((item, idx) => {
+                const isChecked = !!checkedMap[idx];
+                return `
+                <label class="flex items-center space-x-2.5 p-2.5 rounded border border-border bg-surface hover:bg-neutral-100 cursor-pointer select-none">
+                    <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleShopItem(${idx})" class="w-3.5 h-3.5 rounded">
+                    <span class="text-xs ${isChecked ? 'line-through text-subtle' : 'text-ink font-medium'}">${item}</span>
+                </label>`;
+            }).join('');
+        }
+
+        function toggleShopItem(idx) {
+            const checkedMap = JSON.parse(localStorage.getItem('pg_shop') || '{}');
+            checkedMap[idx] = !checkedMap[idx];
+            localStorage.setItem('pg_shop', JSON.stringify(checkedMap));
+            renderShoppingList();
+        }
+
+        function resetShoppingList() {
+            localStorage.removeItem('pg_shop');
+            renderShoppingList();
+        }
+
+        function copyRawShoppingList() {
+            const raw = document.getElementById('raw-shopping-text').innerText.trim();
+            copyTextToClipboard(raw);
+            const btn = document.getElementById('btn-copy-spesa');
+            btn.textContent = "Copiato!";
+            setTimeout(() => btn.textContent = "Copia Testo Pulito", 1800);
+        }
+
+        // --- TAB NAVIGATION ---
+        function switchMainTab(tabId) {
+            document.querySelectorAll('.main-section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.main-tab-btn').forEach(btn => {
+                btn.className = "main-tab-btn py-3 border-b-2 border-transparent text-muted hover:text-ink font-medium text-xs uppercase tracking-wider whitespace-nowrap";
+            });
+            const activeBtn = document.getElementById('btn-' + tabId);
+            if (activeBtn) {
+                activeBtn.className = "main-tab-btn py-3 border-b-2 border-ink text-ink font-medium text-xs uppercase tracking-wider whitespace-nowrap";
+            }
+        }
+
+        function scrollToChat() {
+            document.getElementById('sezione-chat').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('chat-input').focus();
+        }
+
+        function copyTextToClipboard(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+
+        // --- SECTION 5: GEMINI AI ASSISTANT ---
+        const SYSTEM_PROMPT = `Sei l'assistente nutrizionale personale di Piergiorgio Ficara, basato ESCLUSIVAMENTE sul piano della Dott.ssa Annalisa Tartamella.
+REGOLE TASSATIVE DI STILE:
+- Rispondi in modo diretto, ultra-pratico, con grammature esatte a crudo e tabelle/elenchi sintetici. Zero prediche, zero fronzoli.
+- NON proporre MAI: yogurt greco/vaccino, molluschi/crostacei (polpo, calamari, gamberi, cozze), salmone, spigola, cosce di pollo, prosciutto cotto, burro d'arachidi, frutta secca, lenticchie, farro/orzo/quinoa/cous cous.
+- Alimenti preferiti da Piergiorgio: pasta, riso basmati, riso poke, pane fresco, patate, petto di pollo, fesa di tacchino, vitello (hamburger/trita), pesce spada, merluzzo, tonno e sgombro al naturale, prosciutto crudo DOP, bresaola, fesa affettato, uova, albume in bottiglia, Parmigiano Reggiano, ceci, fagioli, proteine in polvere, farine per pancake, cornflakes senza zucchero, miele, cioccolato >85%, olio EVO, banane e frutta.
+
+DATI DEL PIANO NUTRIZIONALE:
+- Target: 3000 kcal giornaliere | 370g Carboidrati | 150g Proteine | 100g Grassi + 1 Pasto Libero.
+- Acqua: almeno 3 Litri al giorno (residuo fisso > 200 mg/dl), 1-2 bicchieri appena sveglio.
+- Integrazione: Creatina Creapure 5g vicino a pasto con carbo (pre/post workout), Omega 3 a pranzo, 1 stick Cortisol Manager la sera prima di dormire.
+- COLAZIONE: Carbo 60g (80g pane fresco, 40-60g farina per pancake, 50g cornflakes) + Proteine (150g albume, 2 uova, 80g affettato magro/tonno, 50g parmigiano, 30g proteine in polvere) + Grassi 10g (10g olio EVO o 10g fondente >85%) + 20g miele.
+- SPUNTINI: Spuntino 1 = 250g frutta o 1 banana. Spuntino 2+3 accorpati = 250g frutta + 30g parmigiano + 30g proteine in polvere.
+- PRANZO: Verdure obbligatorie + Carbo 150g (150g pasta/riso, 230g pane fresco, 600g patate) + Proteine 120g (120g carne bianca/rossa, 180g pesce spada/merluzzo, 120g tonno, 100g affettato, 2 uova + 120g albume, 120g ceci/fagioli cotti o 70g secchi) + Grassi 20g (20g Olio EVO).
+- CENA: Verdure obbligatorie + Carbo 150g (150g pasta/riso, 230g pane fresco, 600g patate, oppure 400g patate + 70g pane) + Proteine 200g (200g carne bianca/rossa, 250g pesce spada/merluzzo, 180g tonno, 150g affettato, 2 uova + 200g albume) + Grassi 20g (20g Olio EVO).
+- REGOLA LEGUMI: quando usi ceci o fagioli, dimezza i carboidrati del pasto (es. 80g pasta + 120g ceci cotti) oppure azzera il pane/pasta e abbina una fonte proteica. Non usare mai l'acqua di governo dei ceci.
+- REGOLA DIVISIONE 50/50: si possono mixare due fonti della stessa categoria dimezzando i pesi. Pranzo e cena sono sempre invertibili.`;
+
+        function loadApiKey() {
+            const savedKey = localStorage.getItem('pg_gemini_key') || '';
+            document.getElementById('gemini-api-key').value = savedKey;
+        }
+
+        function saveApiKey() {
+            const val = document.getElementById('gemini-api-key').value.trim();
+            localStorage.setItem('pg_gemini_key', val);
+        }
+
+        function toggleKeyVisibility() {
+            const input = document.getElementById('gemini-api-key');
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        function sendQuickPrompt(text) {
+            document.getElementById('chat-input').value = text;
+            handleChatSubmit(new Event('submit'));
+        }
+
+        function appendChatMessage(role, htmlText) {
+            const box = document.getElementById('chat-messages');
+            const div = document.createElement('div');
+            if (role === 'user') {
+                div.className = "p-3 bg-ink text-white rounded max-w-2xl ml-auto";
+                div.innerHTML = `<div class="mono-num text-[10px] text-neutral-400 uppercase mb-0.5">TU</div><div>${htmlText}</div>`;
+            } else {
+                div.className = "p-3 bg-white border border-border rounded max-w-3xl";
+                div.innerHTML = `<div class="mono-num text-[10px] text-accent font-semibold uppercase mb-1">GEMINI · ASSISTENTE TARTAMELLA</div><div class="whitespace-pre-wrap text-ink">${htmlText}</div>`;
+            }
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+            return div;
+        }
+
+        async function handleChatSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const userText = input.value.trim();
+            if (!userText) return;
+
+            input.value = '';
+            appendChatMessage('user', userText);
+
+            const userKey = document.getElementById('gemini-api-key').value.trim();
+            const selectedModel = document.getElementById('gemini-model').value;
+            const apiKey = userKey || ""; 
+            const modelToUse = userKey ? selectedModel : "gemini-3-flash-preview";
+
+            const loadingEl = appendChatMessage('model', 'Calcolo grammature e blocchi in corso...');
+            const submitBtn = document.getElementById('chat-submit-btn');
+            submitBtn.disabled = true;
+
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: userText }] }],
+                systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }
+            };
+
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${apiKey}`;
+
+            try {
+                let response;
+                const delays = [1000, 2000, 4000];
+                for (let attempt = 0; attempt <= delays.length; attempt++) {
+                    response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok || attempt === delays.length) break;
+                    await new Promise(r => setTimeout(r, delays[attempt]));
+                }
+
+                const data = await response.json();
+                const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (reply) {
+                    loadingEl.innerHTML = `<div class="mono-num text-[10px] text-accent font-semibold uppercase mb-1">GEMINI · ASSISTENTE TARTAMELLA</div><div class="whitespace-pre-wrap text-ink">${reply.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</div>`;
+                } else {
+                    const errMsg = data?.error?.message || "Inserisci una GEMINI_API_KEY valida nel campo in alto a destra dello sportello chat.";
+                    loadingEl.innerHTML = `<div class="mono-num text-[10px] text-red-600 font-semibold uppercase mb-1">ERRORE API</div><div class="text-red-700">${errMsg}</div>`;
+                }
+            } catch (err) {
+                loadingEl.innerHTML = `<div class="mono-num text-[10px] text-red-600 font-semibold uppercase mb-1">ERRORE DI RETE</div><div class="text-red-700">Impossibile contattare l'API Gemini. Verifica la tua API Key in alto a destra.</div>`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        }
+
+        // --- INIT ON LOAD ---
+        window.addEventListener('DOMContentLoaded', () => {
+            // Auto-select current day of the week (Monday = 0 ... Sunday = 6)
+            const jsDay = new Date().getDay(); // 0 is Sun, 1 is Mon
+            const mappedDay = jsDay === 0 ? 6 : jsDay - 1;
+            renderWater();
+            selectDay(mappedDay);
+            setBuilderMeal('pranzo');
+            renderFrequencies();
+            renderShoppingList();
+            loadApiKey();
+        });
+    </script>
+</body>
+</html>
